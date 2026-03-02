@@ -8,232 +8,212 @@ class CallManager: ObservableObject {
     @Published var isInCall: Bool = false
     @Published var isMuted: Bool = false
     @Published var callDuration: TimeInterval = 0
-    @Published var endpoint: Endpoint?
     @Published var remoteStreams: [RTCStream] = []
-    
+
     var settings: SettingsManager
-    
-    private var rtc: RTCBandwidth!
-    lazy var backendService: BackendService = {
-        return BackendService(settings: settings)
-    }()
+    private(set) var endpoint: Endpoint?
+
+    private var rtc: RTCBandwidth
+    lazy var backendService: BackendService = { BackendService(settings: settings) }()
     private var localStream: RTCStream?
     private var callTimer: Timer?
-    
+
     init(settings: SettingsManager) {
         self.settings = settings
-        print("CallManager initializing...")
-        rtc = RTCBandwidth()
-        print("RTCBandwidth initialized")
-    }
-    
-    func connect() async {
-        DispatchQueue.main.async {
-            self.connectionState = "Creating Endpoint..."
-        }
-        
-        do {
-            let endpoint = try await backendService.createEndpoint()
+        self.rtc = RTCBandwidth()
+
+        rtc.onStreamAvailable { [weak self] stream in
             DispatchQueue.main.async {
-                self.endpoint = endpoint
-                self.connectionState = "Connecting to WebRTC..."
+                self?.remoteStreams.append(stream)
             }
-            
-            // Extract gateway URL from JWT token
-            let websocketUrl = extractGatewayUrl(from: endpoint.endpointToken) ?? "wss://gateway.pv.prod.global.aws.bandwidth.com/prod/gateway-service/api/v1/endpoints"
-            print("Using WebSocket URL: \(websocketUrl)")
-            
-            let rtcAuth = RTCAuth(endpointToken: endpoint.endpointToken)
-            let rtcOptions = RTCOptions(websocketUrl: websocketUrl, iceServers: [], iceTransportPolicy: .all)
-            
-            rtc.connect(rtcAuth: rtcAuth, rtcOptions: rtcOptions) { [weak self] result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success:
-                        self?.connectionState = "Connected"
-                        print("WebRTC connected successfully")
-                    case .failure(let error):
-                        self?.connectionState = "Connection Failed: \(error.localizedDescription)"
-                        print("WebRTC connection failed: \(error)")
-                        print("Error type: \(type(of: error))")
-                        if let nsError = error as NSError? {
-                            print("Error domain: \(nsError.domain)")
-                            print("Error code: \(nsError.code)")
-                            print("Error userInfo: \(nsError.userInfo)")
-                        }
-                    }
-                }
-            }
-        } catch {
-            DispatchQueue.main.async {
-                self.connectionState = "Error: \(error.localizedDescription)"
-            }
-        }
-    }
-    
-    private func extractGatewayUrl(from token: String) -> String? {
-        // JWT format: header.payload.signature
-        let parts = token.split(separator: ".")
-        guard parts.count == 3 else { return nil }
-        
-        // Decode the payload (base64url)
-        var base64 = String(parts[1])
-        // Convert base64url to base64
-        base64 = base64.replacingOccurrences(of: "-", with: "+")
-        base64 = base64.replacingOccurrences(of: "_", with: "/")
-        // Add padding if needed
-        while base64.count % 4 != 0 {
-            base64.append("=")
-        }
-        
-        guard let data = Data(base64Encoded: base64),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let gatewayUrl = json["gatewayRegionalUri"] as? String else {
-            return nil
-        }
-        
-        print("Extracted gateway URL from token: \(gatewayUrl)")
-        return gatewayUrl
-    }
-    
-    func startCall(destination: String, type: EndpointType) async {
-        guard connectionState == "Connected" else {
-            print("Cannot start call: Not connected to WebRTC. Current state: \(connectionState)")
-            DispatchQueue.main.async {
-                self.connectionState = "Error: Not connected. Create endpoint first."
-            }
-            return
-        }
-        
-        guard let _ = endpoint?.endpointId else {
-            print("Cannot start call: No endpoint available")
-            DispatchQueue.main.async {
-                self.connectionState = "Error: No endpoint available"
-            }
-            return
         }
 
+        rtc.onStreamUnavailable { [weak self] stream in
+            DispatchQueue.main.async {
+                self?.remoteStreams.removeAll { $0.mediaStream.streamId == stream.mediaStream.streamId }
+            }
+        }
+
+        rtc.onReady { _ in
+            print("RTCBandwidth is ready")
+        }
+    }
+
+    // MARK: - Connection
+
+    /// Creates an endpoint and connects to the WebRTC signaling server.
+    /// After this completes, the peer connections are established and the SDK is ready to publish.
+    private func connect() async throws {
+        await setState("Creating Endpoint...")
+
+        let endpoint = try await backendService.createEndpoint()
+        await MainActor.run {
+            self.endpoint = endpoint
+            self.connectionState = "Connecting to WebRTC..."
+        }
+
+        let websocketUrl = extractGatewayUrl(from: endpoint.endpointToken)
+            ?? "wss://us-east-2.gateway.pv.prod.global.aws.bandwidth.com/prod/gateway-service/api/v1/endpoints"
+        print("Connecting to: \(websocketUrl)")
+
+        let rtcAuth = RTCAuth(endpointToken: endpoint.endpointToken)
+        let rtcOptions = RTCOptions(websocketUrl: websocketUrl, iceServers: [], iceTransportPolicy: .all)
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            rtc.connect(rtcAuth: rtcAuth, rtcOptions: rtcOptions) { result in
+                switch result {
+                case .success:
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+
+        await setState("Connected")
+        print("WebRTC connected — endpoint: \(endpoint.endpointId)")
+    }
+
+    // MARK: - Outbound Calls
+
+    /// Place a WebRTC-to-WebRTC or WebRTC-to-CallId call.
+    func call(destination: String, type: EndpointType) async {
         do {
-            // 1. Initiate call via SDK
-            print("Requesting outbound connection to \(destination) type: \(type.rawValue)")
-            
+            if connectionState != "Connected" {
+                try await connect()
+            }
+
+            await setState("Calling \(destination)...")
+
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                 rtc.requestOutboundConnection(id: destination, type: type) { result in
                     switch result {
-                    case .success(_):
+                    case .success:
                         continuation.resume()
                     case .failure(let error):
                         continuation.resume(throwing: error)
                     }
                 }
             }
-            
-            print("Outbound connection requested successfully.")
 
-            // 2. Publish local media stream
-            rtc.publish(alias: destination) { [weak self] stream in
-                DispatchQueue.main.async {
-                    self?.localStream = stream
-                    self?.isInCall = true
-                    self?.startCallTimer() // Start timer when call is established
-                    print("Local stream published.")
-                }
-            }
+            await publishLocalMedia(alias: destination)
         } catch {
-            print("Error initiating call: \(error.localizedDescription)")
-            DispatchQueue.main.async {
-                self.connectionState = "Call Failed: \(error.localizedDescription)"
-            }
+            await setState("Error: \(error.localizedDescription)")
+            print("call(destination:type:) failed: \(error)")
         }
     }
-    
-    func placePhoneCall(phoneNumber: String, endpointId: String) async {
-        guard connectionState == "Connected" else {
-            print("Cannot place call: Not connected to WebRTC. Current state: \(connectionState)")
-            DispatchQueue.main.async {
-                self.connectionState = "Error: Not connected. Create endpoint first."
-            }
-            return
-        }
-        
-        guard let _ = endpoint?.endpointId else {
-            print("Cannot place call: No endpoint available")
-            DispatchQueue.main.async {
-                self.connectionState = "Error: No endpoint available"
-            }
-            return
-        }
-        
+
+    /// Place an outbound call to a PSTN phone number.
+    /// The backend places the PSTN call and bridges it to the WebRTC endpoint;
+    /// no requestOutboundConnection is needed — just publish local media.
+    func callPhoneNumber(_ phoneNumber: String) async {
         do {
-            // Step 1: Place the call to the phone number via backend
-            print("Placing call to \(phoneNumber) from endpoint \(endpointId)")
-            try await backendService.placeCall(fromEndpointId: endpointId, toNumber: phoneNumber)
-            print("Call placed successfully via backend.")
-            
-            // Step 2: Start the WebRTC connection to the endpoint
-            print("Starting WebRTC connection to endpoint \(endpointId)")
-            await startCall(destination: endpointId, type: .endpoint)
-            
-        } catch {
-            print("Error placing phone call: \(error.localizedDescription)")
-            DispatchQueue.main.async {
-                self.connectionState = "Phone Call Failed: \(error.localizedDescription)"
+            if connectionState != "Connected" {
+                try await connect()
             }
+
+            guard let endpointId = endpoint?.endpointId else {
+                await setState("Error: No endpoint available")
+                return
+            }
+
+            await setState("Placing call to \(phoneNumber)...")
+            try await backendService.placeCall(fromEndpointId: endpointId, toNumber: phoneNumber)
+            print("PSTN call placed from endpoint \(endpointId) to \(phoneNumber)")
+
+            await publishLocalMedia(alias: phoneNumber)
+        } catch {
+            await setState("Error: \(error.localizedDescription)")
+            print("callPhoneNumber(_:) failed: \(error)")
         }
     }
-    
+
+    // MARK: - Call Controls
+
+    func toggleMute() {
+        isMuted.toggle()
+        rtc.setMicEnabled(!isMuted)
+        print("Mic enabled: \(!isMuted)")
+    }
+
     func sendDTMF(key: String) {
         rtc.sendDtmf(tone: key)
         print("Sent DTMF: \(key)")
     }
-    
-    func toggleMute() {
-        guard let audioTrack = localStream?.mediaStream.audioTracks.first else {
-            print("No local audio track found to toggle mute.")
-            return
-        }
-        audioTrack.isEnabled.toggle()
-        DispatchQueue.main.async {
-            self.isMuted = !audioTrack.isEnabled // Reflect the actual state of the audio track
-            print("Audio track isEnabled: \(audioTrack.isEnabled), CallManager.isMuted: \(self.isMuted)")
-        }
-    }
-    
+
     func endCall() {
         if let stream = localStream {
             rtc.unpublish(streamIds: [stream.mediaStream.streamId]) {
-                print("Unpublished")
+                print("Local stream unpublished")
+            }
+            localStream = nil
+        }
+
+        rtc.disconnect()
+
+        if let endpointId = endpoint?.endpointId {
+            Task { try? await backendService.deleteEndpoint(endpointId: endpointId) }
+        }
+
+        stopCallTimer()
+
+        DispatchQueue.main.async {
+            self.isInCall = false
+            self.isMuted = false
+            self.callDuration = 0
+            self.remoteStreams = []
+            self.endpoint = nil
+            self.connectionState = "Disconnected"
+        }
+    }
+
+    // MARK: - Private Helpers
+
+    private func publishLocalMedia(alias: String) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            rtc.publish(alias: alias) { [weak self] stream in
+                DispatchQueue.main.async {
+                    self?.localStream = stream
+                    self?.isInCall = true
+                    self?.startCallTimer()
+                    print("Local stream published — stream: \(stream.mediaStream.streamId)")
+                }
+                continuation.resume()
             }
         }
-        self.isInCall = false
-        stopCallTimer() // Stop timer when call ends
-        self.callDuration = 0 // Reset duration
-        // Also strictly we should probably delete the endpoint or disconnect, but for a soft hangup, unpublishing is often used in these samples.
-        // Or we disconnect the session.
     }
-    
+
+    private func extractGatewayUrl(from token: String) -> String? {
+        let parts = token.split(separator: ".")
+        guard parts.count == 3 else { return nil }
+
+        var base64 = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        while base64.count % 4 != 0 { base64.append("=") }
+
+        guard let data = Data(base64Encoded: base64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let url = json["gatewayRegionalUri"] as? String else { return nil }
+
+        print("Gateway URL from token: \(url)")
+        return url
+    }
+
+    @MainActor
+    private func setState(_ state: String) {
+        connectionState = state
+    }
+
     private func startCallTimer() {
-        callTimer?.invalidate() // Invalidate any existing timer
+        callTimer?.invalidate()
         callTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.callDuration += 1
-            }
+            DispatchQueue.main.async { self?.callDuration += 1 }
         }
     }
-    
+
     private func stopCallTimer() {
         callTimer?.invalidate()
         callTimer = nil
-    }
-    
-    func disconnect() {
-        rtc.disconnect()
-        if let endpointId = endpoint?.endpointId {
-            Task {
-                try? await backendService.deleteEndpoint(endpointId: endpointId)
-            }
-        }
-        connectionState = "Disconnected"
-        endpoint = nil
     }
 }
