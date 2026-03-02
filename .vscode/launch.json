@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:brtc-swift-sample-application}",
+            "name": "Debug brtc-swift-sample-application",
+            "target": "brtc-swift-sample-application",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug brtc-swift-sample-application"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:brtc-swift-sample-application}",
+            "name": "Release brtc-swift-sample-application",
+            "target": "brtc-swift-sample-application",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release brtc-swift-sample-application"
+        }
+    ]
+}

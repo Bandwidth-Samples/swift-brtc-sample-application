@@ -1,0 +1,24 @@
+{
+  "originHash" : "b05cb2b5ba1d907a4b0cb1394100498711b2bbb8902e5f2ea04c20bd525a1cf4",
+  "pins" : [
+    {
+      "identity" : "json-rpc-websockets",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Bandwidth/json-rpc-websockets.git",
+      "state" : {
+        "revision" : "7c35e5d351b3f9bba1ece6df69bec9dd1dc42fa6",
+        "version" : "0.1.0"
+      }
+    },
+    {
+      "identity" : "webrtc",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/stasel/WebRTC.git",
+      "state" : {
+        "revision" : "86dbb5cb57e4da009b859a6245b1c10d610f215a",
+        "version" : "140.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}

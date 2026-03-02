@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct AudioVisualizerView: View {
     @Binding var isEffective: Bool
