@@ -5,6 +5,7 @@ import Combine
 
 class CallManager: ObservableObject {
     @Published var connectionState: String = "Disconnected"
+    @Published var isConnected: Bool = false
     @Published var isInCall: Bool = false
     @Published var isMuted: Bool = false
     @Published var callDuration: TimeInterval = 0
@@ -43,7 +44,7 @@ class CallManager: ObservableObject {
 
     /// Creates an endpoint and connects to the WebRTC signaling server.
     /// After this completes, the peer connections are established and the SDK is ready to publish.
-    private func connect() async throws {
+    func createAndConnectEndpoint() async throws {
         await setState("Creating Endpoint...")
 
         let endpoint = try await backendService.createEndpoint()
@@ -70,19 +71,61 @@ class CallManager: ObservableObject {
             }
         }
 
-        await setState("Connected")
+        await MainActor.run {
+            self.connectionState = "Connected"
+            self.isConnected = true
+        }
         print("WebRTC connected — endpoint: \(endpoint.endpointId)")
+    }
+
+    /// Disconnects from WebRTC and deletes the endpoint.
+    /// Can be called at any time, even during an active call.
+    func deleteEndpoint() async {
+        // First, end any active call
+        if isInCall {
+            if let stream = localStream {
+                rtc.unpublish(streamIds: [stream.mediaStream.streamId]) {
+                    print("Local stream unpublished")
+                }
+                localStream = nil
+            }
+            stopCallTimer()
+        }
+
+        // Disconnect from WebRTC
+        rtc.disconnect()
+
+        // Delete the endpoint from the backend
+        if let endpointId = endpoint?.endpointId {
+            do {
+                try await backendService.deleteEndpoint(endpointId: endpointId)
+                print("Endpoint \(endpointId) deleted")
+            } catch {
+                print("Failed to delete endpoint: \(error)")
+            }
+        }
+
+        // Reset state
+        await MainActor.run {
+            self.isInCall = false
+            self.isMuted = false
+            self.callDuration = 0
+            self.remoteStreams = []
+            self.endpoint = nil
+        }
     }
 
     // MARK: - Outbound Calls
 
     /// Place a WebRTC-to-WebRTC or WebRTC-to-CallId call.
+    /// Requires that createAndConnectEndpoint() has been called first.
     func call(destination: String, type: EndpointType) async {
-        do {
-            if connectionState != "Connected" {
-                try await connect()
-            }
+        guard isConnected else {
+            await setState("Error: Not connected to WebRTC")
+            return
+        }
 
+        do {
             await setState("Calling \(destination)...")
 
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -106,12 +149,14 @@ class CallManager: ObservableObject {
     /// Place an outbound call to a PSTN phone number.
     /// The backend places the PSTN call and bridges it to the WebRTC endpoint;
     /// no requestOutboundConnection is needed — just publish local media.
+    /// Requires that createAndConnectEndpoint() has been called first.
     func callPhoneNumber(_ phoneNumber: String) async {
-        do {
-            if connectionState != "Connected" {
-                try await connect()
-            }
+        guard isConnected else {
+            await setState("Error: Not connected to WebRTC")
+            return
+        }
 
+        do {
             guard let endpointId = endpoint?.endpointId else {
                 await setState("Error: No endpoint available")
                 return
@@ -120,6 +165,13 @@ class CallManager: ObservableObject {
             await setState("Placing call to \(phoneNumber)...")
             try await backendService.placeCall(fromEndpointId: endpointId, toNumber: phoneNumber)
             print("PSTN call placed from endpoint \(endpointId) to \(phoneNumber)")
+
+            // Update status to show call is live
+            await MainActor.run {
+                self.connectionState = "Call Live"
+                self.isInCall = true
+                self.startCallTimer()
+            }
 
             await publishLocalMedia(alias: phoneNumber)
         } catch {
@@ -149,12 +201,6 @@ class CallManager: ObservableObject {
             localStream = nil
         }
 
-        rtc.disconnect()
-
-        if let endpointId = endpoint?.endpointId {
-            Task { try? await backendService.deleteEndpoint(endpointId: endpointId) }
-        }
-
         stopCallTimer()
 
         DispatchQueue.main.async {
@@ -162,23 +208,40 @@ class CallManager: ObservableObject {
             self.isMuted = false
             self.callDuration = 0
             self.remoteStreams = []
-            self.endpoint = nil
-            self.connectionState = "Disconnected"
+            // Note: We keep the endpoint and connection alive
+            // User can explicitly delete the endpoint if desired
         }
     }
 
     // MARK: - Private Helpers
 
     private func publishLocalMedia(alias: String) async {
+        // Use a timeout to prevent the continuation from leaking if publish never calls back
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            rtc.publish(alias: alias) { [weak self] stream in
-                DispatchQueue.main.async {
-                    self?.localStream = stream
-                    self?.isInCall = true
-                    self?.startCallTimer()
-                    print("Local stream published — stream: \(stream.mediaStream.streamId)")
+            var hasResumed = false
+
+            // Set a timeout in case publish never calls back
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
+                if !hasResumed {
+                    hasResumed = true
+                    print("Warning: publish timed out after 10 seconds")
+                    continuation.resume()
                 }
-                continuation.resume()
+            }
+
+            rtc.publish(alias: alias) { [weak self] stream in
+                if !hasResumed {
+                    hasResumed = true
+                    DispatchQueue.main.async {
+                        self?.localStream = stream
+                        self?.isInCall = true
+                        self?.startCallTimer()
+                        print("Local stream published — stream: \(stream.mediaStream.streamId)")
+                    }
+                    continuation.resume()
+                } else {
+                    print("Warning: publish callback called after timeout")
+                }
             }
         }
     }

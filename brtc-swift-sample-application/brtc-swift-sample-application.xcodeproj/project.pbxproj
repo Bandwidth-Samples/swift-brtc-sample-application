@@ -16,6 +16,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		D0467B4E2F56303A00C7636A /* New Folder */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "New Folder";
+			sourceTree = "<group>";
+		};
 		D0A5FF792F17EFE60008517D /* brtc-swift-sample-application */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "brtc-swift-sample-application";
@@ -39,6 +44,7 @@
 		D0A5FF6E2F17EFE60008517D = {
 			isa = PBXGroup;
 			children = (
+				D0467B4E2F56303A00C7636A /* New Folder */,
 				D0A5FF792F17EFE60008517D /* brtc-swift-sample-application */,
 				D0A5FF782F17EFE60008517D /* Products */,
 			);
@@ -68,6 +74,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				D0467B4E2F56303A00C7636A /* New Folder */,
 				D0A5FF792F17EFE60008517D /* brtc-swift-sample-application */,
 			);
 			name = "brtc-swift-sample-application";
@@ -105,7 +112,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				D0DBF4E62F55F6BF00BEA64A /* XCRemoteSwiftPackageReference "WebRTC" */,
-				D0DBF4EC2F5612C100BEA64A /* XCLocalSwiftPackageReference "in-app-calling-swift-sdk" */,
+				D0DBF4EC2F5612C100BEA64A /* XCLocalSwiftPackageReference "../../in-app-calling-swift-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D0A5FF782F17EFE60008517D /* Products */;
@@ -342,6 +349,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		D0DBF4EC2F5612C100BEA64A /* XCLocalSwiftPackageReference "../../in-app-calling-swift-sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../in-app-calling-swift-sdk";
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		D0DBF4E62F55F6BF00BEA64A /* XCRemoteSwiftPackageReference "WebRTC" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -353,17 +367,10 @@
 		};
 /* End XCRemoteSwiftPackageReference section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		D0DBF4EC2F5612C100BEA64A /* XCLocalSwiftPackageReference "in-app-calling-swift-sdk" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../in-app-calling-swift-sdk;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
 		D0A5FF962F17F0280008517D /* BandwidthWebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = D0DBF4EC2F5612C100BEA64A /* XCLocalSwiftPackageReference "in-app-calling-swift-sdk" */;
+			package = D0DBF4EC2F5612C100BEA64A /* XCLocalSwiftPackageReference "../../in-app-calling-swift-sdk" */;
 			productName = BandwidthWebRTC;
 		};
 		D0DBF4E72F55F6BF00BEA64A /* WebRTC */ = {
