@@ -215,6 +215,22 @@ struct CallView: View {
                 }
                 .padding(.bottom, 24)
 
+                // Audio waveforms (debug: shows transmitted & received audio)
+                VStack(spacing: 8) {
+                    AudioWaveformView(
+                        levels: viewModel.localAudioLevels,
+                        label: "OUTGOING (mic)",
+                        color: .cyan
+                    )
+                    AudioWaveformView(
+                        levels: viewModel.remoteAudioLevels,
+                        label: "INCOMING (remote)",
+                        color: .green
+                    )
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+
                 // Dialpad overlay (if toggled during a call)
                 if viewModel.showDialpad {
                     DialpadView { tone in

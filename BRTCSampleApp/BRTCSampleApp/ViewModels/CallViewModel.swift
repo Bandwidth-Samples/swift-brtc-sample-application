@@ -28,6 +28,13 @@ final class CallViewModel {
     var callStats: CallStatsSnapshot?
     var showStatsOverlay: Bool = false
 
+    // MARK: - Audio Waveform
+
+    /// Rolling buffer of normalized (0–1) mic amplitude samples for the outgoing audio waveform.
+    var localAudioLevels: [Float] = []
+    /// Rolling buffer of normalized (0–1) remote audio level samples for the incoming audio waveform.
+    var remoteAudioLevels: [Float] = []
+
     var callDurationFormatted: String {
         let minutes = Int(callDuration) / 60
         let seconds = Int(callDuration) % 60
@@ -76,6 +83,9 @@ final class CallViewModel {
     private var callTimer: Timer?
     private var statsTimer: Timer?
     private var previousStatsSnapshot: CallStatsSnapshot?
+    private var audioEngine: AVAudioEngine?
+    private var audioLevelTimer: Timer?
+    private let waveformCapacity = 50
     /// Tracks the active call record so we can update its duration when the call ends.
     private var activeCallRecordId: UUID?
     /// Our BRTC endpoint ID (for simulate-bank-call API).
@@ -141,6 +151,7 @@ final class CallViewModel {
         callTimer = nil
         callDuration = 0
         stopStatsPolling()
+        stopAudioLevelMonitoring()
         brtc.disconnect()
         localStream = nil
         remoteStream = nil
@@ -204,6 +215,7 @@ final class CallViewModel {
         callTimer = nil
         callDuration = 0
         stopStatsPolling()
+        stopAudioLevelMonitoring()
         callKitManager.reportCallEnded(reason: .remoteEnded)
 
         Task { @MainActor in
@@ -338,6 +350,7 @@ final class CallViewModel {
                     self.callTimer = nil
                     self.callDuration = 0
                     self.stopStatsPolling()
+                    self.stopAudioLevelMonitoring()
                     self.connectionState = .connected
                     self.statusText = "Call ended"
                 } else {
@@ -361,6 +374,7 @@ final class CallViewModel {
                     self.callTimer = nil
                     self.callDuration = 0
                     self.stopStatsPolling()
+                    self.stopAudioLevelMonitoring()
                     self.connectionState = .connected
                     self.statusText = "Call ended"
                     self.remoteStream = nil
@@ -470,6 +484,7 @@ final class CallViewModel {
             }
         }
         startStatsPolling()
+        startAudioLevelMonitoring()
     }
 
     // MARK: - Stats Polling
@@ -490,6 +505,81 @@ final class CallViewModel {
         callStats = nil
         previousStatsSnapshot = nil
         showStatsOverlay = false
+    }
+
+    // MARK: - Audio Level Monitoring
+
+    private func startAudioLevelMonitoring() {
+        localAudioLevels = []
+        remoteAudioLevels = []
+        startLocalAudioMeter()
+        // Poll remote audio level at 200 ms for a smooth waveform.
+        audioLevelTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+            self?.sampleRemoteAudioLevel()
+        }
+    }
+
+    private func stopAudioLevelMonitoring() {
+        audioLevelTimer?.invalidate()
+        audioLevelTimer = nil
+        audioEngine?.inputNode.removeTap(onBus: 0)
+        audioEngine?.stop()
+        audioEngine = nil
+        localAudioLevels = []
+        remoteAudioLevels = []
+    }
+
+    /// Install an AVAudioEngine input tap to measure local mic levels.
+    /// WebRTC may hold exclusive input on some configurations — if the engine
+    /// fails to start we silently leave localAudioLevels empty.
+    private func startLocalAudioMeter() {
+        let engine = AVAudioEngine()
+        let inputNode = engine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+            guard let self,
+                  let channelData = buffer.floatChannelData?[0] else { return }
+            let frameLength = Int(buffer.frameLength)
+            guard frameLength > 0 else { return }
+
+            // Compute RMS and convert to 0–1 range (−70 dB floor).
+            var sumOfSquares: Float = 0
+            for i in 0..<frameLength { sumOfSquares += channelData[i] * channelData[i] }
+            let rms = (sumOfSquares / Float(frameLength)).squareRoot()
+            let db = 20 * log10(max(rms, 1e-7))
+            let normalized = Float(max(0.0, min(1.0, (db + 70.0) / 70.0)))
+
+            Task { @MainActor in
+                self.appendLocalLevel(normalized)
+            }
+        }
+
+        do {
+            try engine.start()
+            audioEngine = engine
+        } catch {
+            // WebRTC holds the audio hardware; local waveform will remain silent.
+            inputNode.removeTap(onBus: 0)
+        }
+    }
+
+    private func appendLocalLevel(_ level: Float) {
+        localAudioLevels.append(level)
+        if localAudioLevels.count > waveformCapacity { localAudioLevels.removeFirst() }
+    }
+
+    private func sampleRemoteAudioLevel() {
+        brtc.getCallStats(previousSnapshot: nil) { [weak self] snapshot in
+            Task { @MainActor in
+                guard let self else { return }
+                let level = Float(max(0.0, min(1.0, snapshot.audioLevel)))
+                self.remoteAudioLevels.append(level)
+                if self.remoteAudioLevels.count > self.waveformCapacity {
+                    self.remoteAudioLevels.removeFirst()
+                }
+            }
+        }
     }
 
     private func pollStats() {
