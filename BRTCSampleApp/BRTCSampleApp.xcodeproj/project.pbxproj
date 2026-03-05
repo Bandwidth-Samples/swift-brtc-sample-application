@@ -181,7 +181,7 @@
 			);
 			mainGroup = AA200001;
 			packageReferences = (
-				AA300001 /* XCLocalSwiftPackageReference ".." */,
+				AA300001 /* XCLocalSwiftPackageReference "../../in-app-calling-swift-sdk" */,
 			);
 			productRefGroup = AA200006 /* Products */;
 			projectDirPath = "";
@@ -376,16 +376,16 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		AA300001 /* XCLocalSwiftPackageReference ".." */ = {
+		AA300001 /* XCLocalSwiftPackageReference "../../in-app-calling-swift-sdk" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ..;
+			relativePath = ../../in-app-calling-swift-sdk;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		AA30000A /* BandwidthBRTC */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = AA300001 /* XCLocalSwiftPackageReference ".." */;
+			package = AA300001 /* XCLocalSwiftPackageReference "../../in-app-calling-swift-sdk" */;
 			productName = BandwidthBRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
