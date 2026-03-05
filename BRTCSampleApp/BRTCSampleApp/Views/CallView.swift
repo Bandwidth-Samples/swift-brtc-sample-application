@@ -314,6 +314,23 @@ struct CallView: View {
 
             Spacer()
 
+            // Play Media
+            CallControlButton(
+                icon: viewModel.isPlayingMedia ? "stop.circle.fill" : "music.note",
+                label: viewModel.isPlayingMedia ? "Stop" : "Play Media",
+                isActive: viewModel.isPlayingMedia,
+                tint: .white,
+                activeColor: .orange
+            ) {
+                if viewModel.isPlayingMedia {
+                    viewModel.stopMedia()
+                } else {
+                    viewModel.playMedia()
+                }
+            }
+
+            Spacer()
+
             // Hangup
             Button {
                 viewModel.hangup()
