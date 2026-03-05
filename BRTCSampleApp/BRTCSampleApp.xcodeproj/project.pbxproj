@@ -1,0 +1,394 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA000001 /* BRTCSampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100001 /* BRTCSampleApp.swift */; };
+		AA000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100002 /* ContentView.swift */; };
+		AA000003 /* CallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100003 /* CallViewModel.swift */; };
+		AA000004 /* TokenService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100004 /* TokenService.swift */; };
+		AA000005 /* ConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100005 /* ConnectView.swift */; };
+		AA000006 /* CallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100006 /* CallView.swift */; };
+		AA000008 /* DialpadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100008 /* DialpadView.swift */; };
+		AA000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA100009 /* Assets.xcassets */; };
+		AA00000B /* BandwidthBRTC in Frameworks */ = {isa = PBXBuildFile; productRef = AA30000A /* BandwidthBRTC */; };
+		AA00000C /* CallRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000C /* CallRecord.swift */; };
+		AA00000D /* CallHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000D /* CallHistoryManager.swift */; };
+		AA00000E /* RecentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000E /* RecentsView.swift */; };
+		AA00000F /* CallKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000F /* CallKitManager.swift */; };
+		AA000010 /* BankDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100010 /* BankDemoView.swift */; };
+		AA000011 /* StatsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* StatsOverlayView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA100001 /* BRTCSampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BRTCSampleApp.swift; sourceTree = "<group>"; };
+		AA100002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		AA100003 /* CallViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallViewModel.swift; sourceTree = "<group>"; };
+		AA100004 /* TokenService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenService.swift; sourceTree = "<group>"; };
+		AA100005 /* ConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectView.swift; sourceTree = "<group>"; };
+		AA100006 /* CallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallView.swift; sourceTree = "<group>"; };
+		AA100008 /* DialpadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialpadView.swift; sourceTree = "<group>"; };
+		AA100009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA10000A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA10000B /* BRTCSampleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BRTCSampleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA10000C /* CallRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallRecord.swift; sourceTree = "<group>"; };
+		AA10000D /* CallHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallHistoryManager.swift; sourceTree = "<group>"; };
+		AA10000E /* RecentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentsView.swift; sourceTree = "<group>"; };
+		AA10000F /* CallKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKitManager.swift; sourceTree = "<group>"; };
+		AA100010 /* BankDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankDemoView.swift; sourceTree = "<group>"; };
+		AA100011 /* StatsOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsOverlayView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA400001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA00000B /* BandwidthBRTC in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA200001 = {
+			isa = PBXGroup;
+			children = (
+				AA200002 /* BRTCSampleApp */,
+				AA200006 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA200002 /* BRTCSampleApp */ = {
+			isa = PBXGroup;
+			children = (
+				AA200003 /* App */,
+				AA200008 /* Models */,
+				AA200004 /* Views */,
+				AA200005 /* ViewModels */,
+				AA200007 /* Services */,
+				AA100009 /* Assets.xcassets */,
+				AA10000A /* Info.plist */,
+			);
+			path = BRTCSampleApp;
+			sourceTree = "<group>";
+		};
+		AA200003 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AA100001 /* BRTCSampleApp.swift */,
+				AA100002 /* ContentView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AA200004 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AA100005 /* ConnectView.swift */,
+				AA100006 /* CallView.swift */,
+				AA100008 /* DialpadView.swift */,
+				AA10000E /* RecentsView.swift */,
+				AA100010 /* BankDemoView.swift */,
+				AA100011 /* StatsOverlayView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AA200005 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				AA100003 /* CallViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		AA200006 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA10000B /* BRTCSampleApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AA200007 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AA100004 /* TokenService.swift */,
+				AA10000D /* CallHistoryManager.swift */,
+				AA10000F /* CallKitManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		AA200008 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA10000C /* CallRecord.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA500001 /* BRTCSampleApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA700001 /* Build configuration list for PBXNativeTarget "BRTCSampleApp" */;
+			buildPhases = (
+				AA600001 /* Sources */,
+				AA400001 /* Frameworks */,
+				AA600002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BRTCSampleApp;
+			packageProductDependencies = (
+				AA30000A /* BandwidthBRTC */,
+			);
+			productName = BRTCSampleApp;
+			productReference = AA10000B /* BRTCSampleApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA800001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					AA500001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = AA700003 /* Build configuration list for PBXProject "BRTCSampleApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AA200001;
+			packageReferences = (
+				AA300001 /* XCLocalSwiftPackageReference ".." */,
+			);
+			productRefGroup = AA200006 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA500001 /* BRTCSampleApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA600002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000009 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA600001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000001 /* BRTCSampleApp.swift in Sources */,
+				AA000002 /* ContentView.swift in Sources */,
+				AA000003 /* CallViewModel.swift in Sources */,
+				AA000004 /* TokenService.swift in Sources */,
+				AA000005 /* ConnectView.swift in Sources */,
+				AA000006 /* CallView.swift in Sources */,
+				AA000008 /* DialpadView.swift in Sources */,
+				AA00000C /* CallRecord.swift in Sources */,
+				AA00000D /* CallHistoryManager.swift in Sources */,
+				AA00000E /* RecentsView.swift in Sources */,
+				AA00000F /* CallKitManager.swift in Sources */,
+				AA000010 /* BankDemoView.swift in Sources */,
+				AA000011 /* StatsOverlayView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA900001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AA900002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AA900003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BRTCSampleApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "BRTC Sample";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs microphone access for voice calls.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bandwidth.brtc.sample;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AA900004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BRTCSampleApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "BRTC Sample";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs microphone access for voice calls.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bandwidth.brtc.sample;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA700001 /* Build configuration list for PBXNativeTarget "BRTCSampleApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA900003 /* Debug */,
+				AA900004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA700003 /* Build configuration list for PBXProject "BRTCSampleApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA900001 /* Debug */,
+				AA900002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		AA300001 /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA30000A /* BandwidthBRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA300001 /* XCLocalSwiftPackageReference ".." */;
+			productName = BandwidthBRTC;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = AA800001 /* Project object */;
+}
