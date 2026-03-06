@@ -66,13 +66,6 @@ struct ConnectView: View {
                             title: "Call History",
                             description: "Keep track of your recent calls with direction, duration, and timestamps."
                         )
-
-                        FeatureRow(
-                            icon: "building.columns.fill",
-                            iconColor: .purple,
-                            title: "Branded Calling",
-                            description: "See who's really calling — businesses show their name, not a random number."
-                        )
                     }
                     .padding(.horizontal, 24)
                     .opacity(appeared ? 1.0 : 0)

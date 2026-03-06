@@ -39,7 +39,7 @@ final class CallKitManager: NSObject, CXProviderDelegate {
 
     // MARK: - Report Incoming Call
 
-    /// Show the native iOS incoming call screen with a branded caller name.
+    /// Show the native iOS incoming call screen.
     func reportIncomingCall(
         callerName: String,
         completion: @escaping (Error?) -> Void

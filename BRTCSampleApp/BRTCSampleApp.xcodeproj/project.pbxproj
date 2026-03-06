@@ -20,7 +20,6 @@
 		AA00000D /* CallHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000D /* CallHistoryManager.swift */; };
 		AA00000E /* RecentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000E /* RecentsView.swift */; };
 		AA00000F /* CallKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000F /* CallKitManager.swift */; };
-		AA000010 /* BankDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100010 /* BankDemoView.swift */; };
 		AA000011 /* StatsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* StatsOverlayView.swift */; };
 		AA000012 /* afro-pop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AA100012 /* afro-pop.mp3 */; };
 		AA000013 /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* AudioWaveformView.swift */; };
@@ -41,7 +40,6 @@
 		AA10000D /* CallHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallHistoryManager.swift; sourceTree = "<group>"; };
 		AA10000E /* RecentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentsView.swift; sourceTree = "<group>"; };
 		AA10000F /* CallKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKitManager.swift; sourceTree = "<group>"; };
-		AA100010 /* BankDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankDemoView.swift; sourceTree = "<group>"; };
 		AA100011 /* StatsOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsOverlayView.swift; sourceTree = "<group>"; };
 		AA100012 /* afro-pop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "afro-pop.mp3"; sourceTree = "<group>"; };
 		AA100013 /* AudioWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioWaveformView.swift; sourceTree = "<group>"; };
@@ -106,7 +104,6 @@
 				AA100006 /* CallView.swift */,
 				AA100008 /* DialpadView.swift */,
 				AA10000E /* RecentsView.swift */,
-				AA100010 /* BankDemoView.swift */,
 				AA100011 /* StatsOverlayView.swift */,
 				AA100013 /* AudioWaveformView.swift */,
 			);
@@ -234,7 +231,6 @@
 				AA00000D /* CallHistoryManager.swift in Sources */,
 				AA00000E /* RecentsView.swift in Sources */,
 				AA00000F /* CallKitManager.swift in Sources */,
-				AA000010 /* BankDemoView.swift in Sources */,
 				AA000011 /* StatsOverlayView.swift in Sources */,
 				AA000013 /* AudioWaveformView.swift in Sources */,
 			);

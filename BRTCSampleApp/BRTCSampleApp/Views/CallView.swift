@@ -4,7 +4,7 @@ struct CallView: View {
     @Bindable var viewModel: CallViewModel
     @State private var selectedTab: Tab = .keypad
 
-    enum Tab { case keypad, recents, bankDemo }
+    enum Tab { case keypad, recents }
 
     var body: some View {
         ZStack {
@@ -30,12 +30,6 @@ struct CallView: View {
                         Label("Recents", systemImage: "clock.fill")
                     }
                     .tag(Tab.recents)
-
-                    BankDemoView(viewModel: viewModel)
-                        .tabItem {
-                            Label("Branded Calling", systemImage: "building.columns.fill")
-                        }
-                        .tag(Tab.bankDemo)
                 }
                 .tint(.blue)
             }
@@ -222,9 +216,10 @@ struct CallView: View {
                         label: viewModel.isPlayingMedia ? "OUTGOING (media)" : "OUTGOING (mic)",
                         color: .cyan
                     )
+                    let remoteLevel = viewModel.remoteAudioLevels.last ?? 0
                     AudioWaveformView(
                         levels: viewModel.remoteAudioLevels,
-                        label: "INCOMING (remote)",
+                        label: "INCOMING (remote) \(String(format: "%.3f", remoteLevel))",
                         color: .green
                     )
                 }

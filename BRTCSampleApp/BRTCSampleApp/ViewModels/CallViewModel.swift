@@ -526,7 +526,9 @@ final class CallViewModel {
                 localFrameCount = 0
                 Task { @MainActor [weak self] in
                     guard let self else { return }
-                    self.localAudioLevels.append(level)
+                    // When mic is muted, show 0 levels (flat waveform)
+                    let displayLevel = self.isMicEnabled ? level : 0.0
+                    self.localAudioLevels.append(displayLevel)
                     if self.localAudioLevels.count > self.waveformCapacity { self.localAudioLevels.removeFirst() }
                 }
             }
@@ -534,7 +536,14 @@ final class CallViewModel {
 
         var remoteSumSq: Float = 0
         var remoteFrameCount = 0
+        var remoteWindowCount = 0
+        var remoteCallbackFired = false
         brtc.onRemoteAudioLevel = { [weak self] samples in
+            if !remoteCallbackFired {
+                remoteCallbackFired = true
+                let maxAmp = samples.map { abs($0) }.max() ?? 0
+                print("[BRTC] remote audio callback FIRST FIRE: samples=\(samples.count) maxAmp=\(String(format: "%.6f", maxAmp))")
+            }
             for s in samples { remoteSumSq += s * s }
             remoteFrameCount += samples.count
             if remoteFrameCount >= 9600 {
@@ -543,6 +552,10 @@ final class CallViewModel {
                 let level = Float(max(0.0, min(1.0, (db + 70.0) / 70.0)))
                 remoteSumSq = 0
                 remoteFrameCount = 0
+                remoteWindowCount += 1
+                if remoteWindowCount % 5 == 0 {
+                    print("[BRTC] remote audio: rms=\(String(format: "%.5f", rms)) dB=\(String(format: "%.1f", db)) level=\(String(format: "%.3f", level))")
+                }
                 Task { @MainActor [weak self] in
                     guard let self else { return }
                     self.remoteAudioLevels.append(level)
@@ -550,6 +563,7 @@ final class CallViewModel {
                 }
             }
         }
+        print("[BRTC] remote audio monitoring started")
     }
 
     private func stopAudioLevelMonitoring() {

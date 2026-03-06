@@ -1,12 +1,11 @@
-# Bandwidth BRTC — Branded Calling Demo
+# Bandwidth BRTC Swift Sample Application
 
-A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://www.bandwidth.com/voice/webrtc/), demonstrating branded incoming calls, outbound PSTN dialing, and live call quality monitoring.
+A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://www.bandwidth.com/voice/webrtc/), demonstrating outbound PSTN dialing and live call quality monitoring.
 
 > **Note:** This project uses the Bandwidth BRTC SDK, which is currently in beta.
 
 ## Features
 
-- **Branded Incoming Calls** — Businesses call customers via WebRTC. CallKit presents the company name natively on the iOS incoming call screen, building trust and increasing answer rates.
 - **Outbound PSTN Calling** — Dial any phone number from the app. Audio flows over WebRTC and bridges to the PSTN via Bandwidth's Voice API.
 - **Live Call Stats** — Real-time quality overlay showing jitter, packet loss, round-trip time, bitrate, codec, and audio level — pulled directly from WebRTC's `getStats()` API.
 - **Call History** — Track recent calls with direction, duration, and timestamps.
@@ -32,13 +31,6 @@ A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://www.
 3. Server receives the request, creates a Voice API call to the PSTN number
 4. PSTN party answers → server returns `<Connect><Endpoint>` BXML to bridge audio
 5. Audio flows: iOS App ↔ WebRTC ↔ Bandwidth ↔ PSTN
-
-**Branded incoming call flow (demo):**
-1. User taps "Call Me" in the Branded Calling tab
-2. Server creates a Voice API call that bridges to the WebRTC endpoint
-3. CallKit presents a native incoming call screen showing "Acme Bank"
-4. User accepts → TTS audio plays simulating a bank message
-5. Call ends cleanly, endpoint persists for the next call
 
 ## Prerequisites
 
@@ -143,8 +135,6 @@ BRTC token server running on http://localhost:3000
 
 **Outbound:** Switch to the Keypad tab, dial a number, tap the green call button.
 
-**Branded incoming (demo):** Switch to the Branded Calling tab and tap **Call Me**. After a few seconds, an incoming call from "Acme Bank" will appear via CallKit.
-
 **Inbound PSTN:** Call your `BW_FROM_NUMBER` from any phone. The call will ring through to the app.
 
 ## Project Structure
@@ -167,7 +157,6 @@ BRTC token server running on http://localhost:3000
 │       │   ├── ConnectView.swift    #     Server connection screen
 │       │   ├── CallView.swift       #     Dialing, ringing, and in-call screens
 │       │   ├── DialpadView.swift    #     12-key dialpad component
-│       │   ├── BankDemoView.swift   #     Branded calling demo tab
 │       │   ├── RecentsView.swift    #     Call history list
 │       │   └── StatsOverlayView.swift #   Live call quality overlay
 │       └── Services/                #   Token fetching, CallKit, call history
