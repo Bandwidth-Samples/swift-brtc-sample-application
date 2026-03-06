@@ -83,7 +83,6 @@ final class CallViewModel {
     private var callTimer: Timer?
     private var statsTimer: Timer?
     private var previousStatsSnapshot: CallStatsSnapshot?
-    private var audioEngine: AVAudioEngine?
     private var audioLevelTimer: Timer?
     private let waveformCapacity = 50
     /// Tracks the active call record so we can update its duration when the call ends.
@@ -196,9 +195,8 @@ final class CallViewModel {
                 )
                 if result.accepted {
                     callKitManager.activateAudioSessionForOutboundCall()
-                    statusText = "Call connected"
-                    callDuration = 0
-                    startCallTimer()
+                    statusText = "Ringing..."
+                    // Timer and waveform start when the remote party answers (onStreamAvailable).
                 } else {
                     statusText = "Call not accepted"
                 }
@@ -512,7 +510,26 @@ final class CallViewModel {
     private func startAudioLevelMonitoring() {
         localAudioLevels = []
         remoteAudioLevels = []
-        startLocalAudioMeter()
+        // Accumulate RMS over 200 ms windows (9600 frames at 48 kHz).
+        // sumSq and frameCount are closure-local to avoid cross-thread access to @Observable properties.
+        var sumSq: Float = 0
+        var frameCount = 0
+        brtc.onLocalAudioLevel = { [weak self] samples in
+            for s in samples { sumSq += s * s }
+            frameCount += samples.count
+            if frameCount >= 9600 {
+                let rms = (sumSq / Float(frameCount)).squareRoot()
+                let db = 20 * log10(max(rms, 1e-7))
+                let level = Float(max(0.0, min(1.0, (db + 70.0) / 70.0)))
+                sumSq = 0
+                frameCount = 0
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.localAudioLevels.append(level)
+                    if self.localAudioLevels.count > self.waveformCapacity { self.localAudioLevels.removeFirst() }
+                }
+            }
+        }
         // Poll remote audio level at 200 ms for a smooth waveform.
         audioLevelTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
             self?.sampleRemoteAudioLevel()
@@ -522,51 +539,9 @@ final class CallViewModel {
     private func stopAudioLevelMonitoring() {
         audioLevelTimer?.invalidate()
         audioLevelTimer = nil
-        audioEngine?.inputNode.removeTap(onBus: 0)
-        audioEngine?.stop()
-        audioEngine = nil
+        brtc.onLocalAudioLevel = nil
         localAudioLevels = []
         remoteAudioLevels = []
-    }
-
-    /// Install an AVAudioEngine input tap to measure local mic levels.
-    /// WebRTC may hold exclusive input on some configurations — if the engine
-    /// fails to start we silently leave localAudioLevels empty.
-    private func startLocalAudioMeter() {
-        let engine = AVAudioEngine()
-        let inputNode = engine.inputNode
-        let format = inputNode.outputFormat(forBus: 0)
-
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            guard let self,
-                  let channelData = buffer.floatChannelData?[0] else { return }
-            let frameLength = Int(buffer.frameLength)
-            guard frameLength > 0 else { return }
-
-            // Compute RMS and convert to 0–1 range (−70 dB floor).
-            var sumOfSquares: Float = 0
-            for i in 0..<frameLength { sumOfSquares += channelData[i] * channelData[i] }
-            let rms = (sumOfSquares / Float(frameLength)).squareRoot()
-            let db = 20 * log10(max(rms, 1e-7))
-            let normalized = Float(max(0.0, min(1.0, (db + 70.0) / 70.0)))
-
-            Task { @MainActor in
-                self.appendLocalLevel(normalized)
-            }
-        }
-
-        do {
-            try engine.start()
-            audioEngine = engine
-        } catch {
-            // WebRTC holds the audio hardware; local waveform will remain silent.
-            inputNode.removeTap(onBus: 0)
-        }
-    }
-
-    private func appendLocalLevel(_ level: Float) {
-        localAudioLevels.append(level)
-        if localAudioLevels.count > waveformCapacity { localAudioLevels.removeFirst() }
     }
 
     private func sampleRemoteAudioLevel() {
