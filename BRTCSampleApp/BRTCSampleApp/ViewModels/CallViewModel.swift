@@ -83,7 +83,6 @@ final class CallViewModel {
     private var callTimer: Timer?
     private var statsTimer: Timer?
     private var previousStatsSnapshot: CallStatsSnapshot?
-    private var audioLevelTimer: Timer?
     private let waveformCapacity = 50
     /// Tracks the active call record so we can update its duration when the call ends.
     private var activeCallRecordId: UUID?
@@ -321,9 +320,11 @@ final class CallViewModel {
                     self.startCallTimer()
                 } else if self.connectionState == .inCall {
                     // Stream arrived after user accepted (simulated bank call) or during
-                    // an outbound call. Audio is enabled — update status to show connected.
+                    // an outbound call. Start the timer if not already running.
                     if self.statusText == "Connecting..." {
                         self.statusText = "Acme Bank"
+                    }
+                    if self.callTimer == nil {
                         self.startCallTimer()
                     }
                 }
@@ -511,18 +512,18 @@ final class CallViewModel {
         localAudioLevels = []
         remoteAudioLevels = []
         // Accumulate RMS over 200 ms windows (9600 frames at 48 kHz).
-        // sumSq and frameCount are closure-local to avoid cross-thread access to @Observable properties.
-        var sumSq: Float = 0
-        var frameCount = 0
+        // sumSq/frameCount are closure-local to avoid cross-thread access to @Observable properties.
+        var localSumSq: Float = 0
+        var localFrameCount = 0
         brtc.onLocalAudioLevel = { [weak self] samples in
-            for s in samples { sumSq += s * s }
-            frameCount += samples.count
-            if frameCount >= 9600 {
-                let rms = (sumSq / Float(frameCount)).squareRoot()
+            for s in samples { localSumSq += s * s }
+            localFrameCount += samples.count
+            if localFrameCount >= 9600 {
+                let rms = (localSumSq / Float(localFrameCount)).squareRoot()
                 let db = 20 * log10(max(rms, 1e-7))
                 let level = Float(max(0.0, min(1.0, (db + 70.0) / 70.0)))
-                sumSq = 0
-                frameCount = 0
+                localSumSq = 0
+                localFrameCount = 0
                 Task { @MainActor [weak self] in
                     guard let self else { return }
                     self.localAudioLevels.append(level)
@@ -530,31 +531,32 @@ final class CallViewModel {
                 }
             }
         }
-        // Poll remote audio level at 200 ms for a smooth waveform.
-        audioLevelTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
-            self?.sampleRemoteAudioLevel()
+
+        var remoteSumSq: Float = 0
+        var remoteFrameCount = 0
+        brtc.onRemoteAudioLevel = { [weak self] samples in
+            for s in samples { remoteSumSq += s * s }
+            remoteFrameCount += samples.count
+            if remoteFrameCount >= 9600 {
+                let rms = (remoteSumSq / Float(remoteFrameCount)).squareRoot()
+                let db = 20 * log10(max(rms, 1e-7))
+                let level = Float(max(0.0, min(1.0, (db + 70.0) / 70.0)))
+                remoteSumSq = 0
+                remoteFrameCount = 0
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.remoteAudioLevels.append(level)
+                    if self.remoteAudioLevels.count > self.waveformCapacity { self.remoteAudioLevels.removeFirst() }
+                }
+            }
         }
     }
 
     private func stopAudioLevelMonitoring() {
-        audioLevelTimer?.invalidate()
-        audioLevelTimer = nil
         brtc.onLocalAudioLevel = nil
+        brtc.onRemoteAudioLevel = nil
         localAudioLevels = []
         remoteAudioLevels = []
-    }
-
-    private func sampleRemoteAudioLevel() {
-        brtc.getCallStats(previousSnapshot: nil) { [weak self] snapshot in
-            Task { @MainActor in
-                guard let self else { return }
-                let level = Float(max(0.0, min(1.0, snapshot.audioLevel)))
-                self.remoteAudioLevels.append(level)
-                if self.remoteAudioLevels.count > self.waveformCapacity {
-                    self.remoteAudioLevels.removeFirst()
-                }
-            }
-        }
     }
 
     private func pollStats() {

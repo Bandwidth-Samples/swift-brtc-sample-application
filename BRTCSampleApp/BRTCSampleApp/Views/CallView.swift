@@ -219,7 +219,7 @@ struct CallView: View {
                 VStack(spacing: 8) {
                     AudioWaveformView(
                         levels: viewModel.localAudioLevels,
-                        label: "OUTGOING (mic)",
+                        label: viewModel.isPlayingMedia ? "OUTGOING (media)" : "OUTGOING (mic)",
                         color: .cyan
                     )
                     AudioWaveformView(
