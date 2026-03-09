@@ -1,7 +1,7 @@
 import AVFoundation
 import SwiftUI
 import UIKit
-import BandwidthBRTC
+import BandwidthRTC
 
 enum ConnectionState: Equatable {
     case disconnected
@@ -39,6 +39,10 @@ final class CallViewModel {
         let minutes = Int(callDuration) / 60
         let seconds = Int(callDuration) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    var currentEndpointId: String? {
+        endpointId
     }
 
     var formattedPhoneNumber: String {
@@ -86,7 +90,7 @@ final class CallViewModel {
     private let waveformCapacity = 50
     /// Tracks the active call record so we can update its duration when the call ends.
     private var activeCallRecordId: UUID?
-    /// Our BRTC endpoint ID (for simulate-bank-call API).
+    /// Our BRTC endpoint ID (for the simulated incoming call API).
     private var endpointId: String?
     /// Holds the incoming stream until the user answers via CallKit.
     private var pendingIncomingStream: RtcStream?
@@ -150,7 +154,9 @@ final class CallViewModel {
         callDuration = 0
         stopStatsPolling()
         stopAudioLevelMonitoring()
-        brtc.disconnect()
+        Task {
+            await brtc.disconnect()
+        }
         localStream = nil
         remoteStream = nil
         pendingIncomingStream = nil
@@ -263,18 +269,18 @@ final class CallViewModel {
         brtc.sendDtmf(tone)
     }
 
-    // MARK: - Simulate Bank Call
+    // MARK: - Simulate Incoming Call
 
-    func simulateBankCall() {
+    func simulateIncomingCall() {
         guard endpointId != nil else {
             showErrorMessage("Not connected to an endpoint yet")
             return
         }
 
         let delaySeconds = 3
-        statusText = "Acme Bank calling in \(delaySeconds)s..."
+        statusText = "Incoming call in \(delaySeconds)s..."
 
-        // Schedule the ringing UI after a delay (simulates the bank deciding to call).
+        // Schedule the ringing UI after a delay.
         // The actual Voice API call is NOT created yet — it starts when the user taps Accept.
         // On a real device, CallKit shows the native iOS call screen (triggered by a
         // PushKit VoIP push in production). In the simulator, CallKit is not supported.
@@ -284,7 +290,7 @@ final class CallViewModel {
             self.connectionState = .ringing
 
             #if !targetEnvironment(simulator)
-            self.callKitManager.reportIncomingCall(callerName: "Acme Bank") { error in
+            self.callKitManager.reportIncomingCall(callerName: "Incoming Call") { error in
                 if let error {
                     Task { @MainActor in
                         self.connectionState = .connected
@@ -306,7 +312,7 @@ final class CallViewModel {
                 self.remoteStream = stream
 
                 if self.connectionState == .ringing {
-                    // Simulated bank call: CallKit / our ringing UI is already showing.
+                    // Simulated incoming call: CallKit / our ringing UI is already showing.
                     // Hold the stream and mute audio until the user taps Accept.
                     self.pendingIncomingStream = stream
                     stream.mediaStream.audioTracks.forEach { $0.isEnabled = false }
@@ -319,10 +325,10 @@ final class CallViewModel {
                     self.recordIncomingCall(phoneNumber: "Incoming Call")
                     self.startCallTimer()
                 } else if self.connectionState == .inCall {
-                    // Stream arrived after user accepted (simulated bank call) or during
+                    // Stream arrived after user accepted (simulated incoming call) or during
                     // an outbound call. Start the timer if not already running.
                     if self.statusText == "Connecting..." {
-                        self.statusText = "Acme Bank"
+                        self.statusText = "Incoming call"
                     }
                     if self.callTimer == nil {
                         self.startCallTimer()
@@ -414,11 +420,11 @@ final class CallViewModel {
         statusText = "Connecting..."
         callDuration = 0
 
-        recordIncomingCall(phoneNumber: "Acme Bank")
+        recordIncomingCall(phoneNumber: "Incoming Call")
 
         // Now create the Voice API call — TTS starts fresh from the beginning.
         // The server creates a call from BW_FROM_NUMBER to BW_FROM_NUMBER.
-        // B-leg answers with TTS ("Hello, this is Acme Bank...").
+        // B-leg answers with TTS before bridging.
         // A-leg bridges to the WebRTC endpoint via <Connect><Endpoint>.
         // When the bridge is established, onStreamAvailable fires and audio flows.
         guard let endpointId else {
@@ -428,7 +434,7 @@ final class CallViewModel {
 
         Task { @MainActor in
             do {
-                guard let url = URL(string: "\(serverURL)/simulate-bank-call") else {
+                guard let url = URL(string: "\(serverURL)/simulate-incoming-call") else {
                     showErrorMessage("Invalid server URL")
                     return
                 }
@@ -463,7 +469,7 @@ final class CallViewModel {
 
             let record = CallRecord(
                 id: UUID(),
-                phoneNumber: "Acme Bank",
+                phoneNumber: "Incoming Call",
                 e164Number: "",
                 direction: .inbound,
                 timestamp: Date(),

@@ -125,7 +125,7 @@ BRTC token server running on http://localhost:3000
 ### 6. Build and run the iOS app
 
 1. Open `BRTCSampleApp/BRTCSampleApp.xcodeproj` in Xcode
-2. Wait for Swift Package Manager to resolve the `BandwidthBRTC` and `WebRTC` dependencies
+2. Wait for Swift Package Manager to resolve the `BandwidthRTC` and `WebRTC` dependencies
 3. Select your connected iPhone as the build target
 4. Build and run (⌘R)
 5. On the Connect screen, enter your server URL (e.g., `http://192.168.1.100:3000` or your ngrok URL)
@@ -140,7 +140,7 @@ BRTC token server running on http://localhost:3000
 ## Project Structure
 
 ```
-├── Sources/BandwidthBRTC/           # BRTC Swift SDK (Swift Package)
+├── Sources/BandwidthRTC/           # BRTC Swift SDK (Swift Package)
 │   ├── BandwidthRTC.swift           #   Main public API
 │   ├── Signaling/                   #   WebSocket signaling & JSON-RPC
 │   ├── Types/                       #   Public types (RtcStream, CallStatsSnapshot, etc.)
@@ -174,7 +174,7 @@ BRTC token server running on http://localhost:3000
 | Layer | Technology |
 |-------|-----------|
 | iOS App | SwiftUI, CallKit, AVFoundation |
-| SDK | BandwidthBRTC Swift Package (WebRTC M114) |
+| SDK | BandwidthRTC Swift Package (WebRTC M114) |
 | Server | Node.js, Express |
 | Voice | Bandwidth Voice API, BXML |
 | Tunneling | ngrok (development) |
@@ -189,10 +189,8 @@ The Node.js server exposes the following:
 | `POST` | `/callbacks/bandwidth` | Handles BRTC events and incoming PSTN call routing |
 | `POST` | `/callbacks/bandwidth/status` | Voice API disconnect events |
 | `POST` | `/calls/answer` | BXML callback for outbound calls — bridges to WebRTC endpoint |
-| `POST` | `/calls/events` | Connect verb lifecycle events |
-| `POST` | `/calls/disconnect` | Final call disconnect cleanup |
-| `POST` | `/simulate-bank-call` | Triggers a branded incoming call to a WebRTC endpoint |
-| `POST` | `/calls/simulate-answer` | BXML callback for the simulated bank call |
+| `POST` | `/calls/status` | Call status updates |
+| `POST` | `/calls/simulate-incoming-answer` | BXML callback for simulated incoming calls |
 | `GET` | `/health` | Health check |
 | `GET` | `/debug/endpoints` | Inspect the in-memory endpoint map |
 

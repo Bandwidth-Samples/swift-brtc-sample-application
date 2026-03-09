@@ -1,5 +1,5 @@
 import SwiftUI
-import BandwidthBRTC
+import BandwidthRTC
 
 /// Live call stats overlay shown on the in-call screen.
 /// Tap the pill badge to expand/collapse the detailed stats panel.

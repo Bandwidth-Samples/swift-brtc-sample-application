@@ -51,7 +51,7 @@ struct CallView: View {
                     .foregroundStyle(.blue)
                     .padding(.bottom, 16)
 
-                Text("Acme Bank")
+                Text("Incoming Call")
                     .font(.system(size: 30, weight: .light))
                     .foregroundStyle(.white)
 
@@ -110,6 +110,22 @@ struct CallView: View {
     private var dialingLayout: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: 48)
+
+            if let endpointId = viewModel.currentEndpointId, !endpointId.isEmpty {
+                VStack(spacing: 4) {
+                    Text("Endpoint ID")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text(endpointId)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .padding(.horizontal, 24)
+                }
+                .padding(.bottom, 12)
+            }
 
             // Phone number display
             Text(viewModel.formattedPhoneNumber)

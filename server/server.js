@@ -214,14 +214,14 @@ app.post("/callbacks/bandwidth", async (req, res) => {
   // When someone calls the Bandwidth phone number, the Application's
   // callInitiatedCallbackUrl sends a webhook here. We must respond with BXML.
   if (event.eventType === "initiate" && event.direction === "inbound") {
-    // B-leg of simulated bank calls (from === to === our number).
+    // B-leg of simulated incoming calls (from === to === our number).
     // Must answer (via an audio verb) so the A-leg's answerUrl fires and bridges to the endpoint.
     // <SpeakSentence> implicitly answers the call; <Pause> alone does NOT answer.
     if (event.from === BW_FROM_NUMBER && event.to === BW_FROM_NUMBER) {
-      console.log("B-leg of simulated bank call — answering with TTS");
+      console.log("B-leg of simulated incoming call - answering with TTS");
       return res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <SpeakSentence voice="julie"><break time="2s"/>Hello! This is Acme Bank calling regarding your account security. One moment please while we connect you.</SpeakSentence>
+    <SpeakSentence voice="julie"><break time="2s"/>Hello. Please hold while we connect your call.</SpeakSentence>
     <Pause duration="3600"/>
 </Response>`);
     }
@@ -337,35 +337,6 @@ app.post("/calls/answer", (req, res) => {
   }
 });
 
-// POST /calls/events - Connect verb lifecycle events (bridge ended, etc.)
-// This is a BXML callback — must return BXML.
-app.post("/calls/events", (req, res) => {
-  const event = req.body;
-  console.log("Connect event:", JSON.stringify(event, null, 2));
-
-  // Don't delete the endpoint — it should persist for the entire WebRTC session.
-  // Just clean up the callId mapping.
-  if (event.callId) endpointMap.delete(event.callId);
-
-  // Return BXML to hang up the call after the bridge ends
-  res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Hangup/>
-</Response>`);
-});
-
-// POST /calls/disconnect - Final call disconnect notification
-app.post("/calls/disconnect", (req, res) => {
-  const event = req.body;
-  console.log("Call disconnect:", JSON.stringify(event, null, 2));
-
-  // Don't delete the endpoint — it should persist for the entire WebRTC session.
-  // Just clean up the callId mapping.
-  if (event.callId) endpointMap.delete(event.callId);
-
-  res.sendStatus(200);
-});
-
 // POST /calls/status - Call status updates
 app.post("/calls/status", (req, res) => {
   console.log("Call status:", JSON.stringify(req.body, null, 2));
@@ -386,9 +357,8 @@ app.get("/debug/endpoints", (req, res) => {
   res.json({ count: entries.length, entries });
 });
 
-// POST /simulate-bank-call - Trigger a simulated incoming call to a WebRTC endpoint
-// Demonstrates a branded bank calling a customer via CallKit.
-app.post("/simulate-bank-call", async (req, res) => {
+// POST /simulate-incoming-call - Trigger a simulated incoming call to a WebRTC endpoint
+app.post("/simulate-incoming-call", async (req, res) => {
   const { endpointId, delaySeconds = 5 } = req.body;
 
   if (!endpointId) {
@@ -399,7 +369,7 @@ app.post("/simulate-bank-call", async (req, res) => {
     return res.status(404).json({ error: "Endpoint not found" });
   }
 
-  console.log(`Scheduling simulated bank call to endpoint ${endpointId} in ${delaySeconds}s`);
+  console.log(`Scheduling simulated incoming call to endpoint ${endpointId} in ${delaySeconds}s`);
 
   // Respond immediately so the client can background the app
   res.json({ status: "scheduled", delaySeconds });
@@ -417,14 +387,14 @@ app.post("/simulate-bank-call", async (req, res) => {
         from: BW_FROM_NUMBER,
         to: BW_FROM_NUMBER,
         applicationId: BW_APPLICATION_ID,
-        answerUrl: `${baseUrl}/calls/simulate-answer`,
+        answerUrl: `${baseUrl}/calls/simulate-incoming-answer`,
         answerMethod: "POST",
         disconnectUrl: `${baseUrl}/callbacks/bandwidth/status`,
         disconnectMethod: "POST",
-        tag: JSON.stringify({ endpointId, simulatedCall: true }),
+        tag: JSON.stringify({ endpointId, simulatedIncomingCall: true }),
       };
 
-      console.log(`Creating simulated bank call: POST ${callUrl}`);
+      console.log(`Creating simulated incoming call: POST ${callUrl}`);
       const callResponse = await fetch(callUrl, {
         method: "POST",
         headers: {
@@ -447,8 +417,8 @@ app.post("/simulate-bank-call", async (req, res) => {
   }, delaySeconds * 1000);
 });
 
-// POST /calls/simulate-answer - BXML callback for the outbound leg of simulated bank calls
-app.post("/calls/simulate-answer", (req, res) => {
+// POST /calls/simulate-incoming-answer - BXML callback for the outbound leg of simulated incoming calls
+app.post("/calls/simulate-incoming-answer", (req, res) => {
   const event = req.body;
   console.log("Simulated call answer callback:", JSON.stringify(event, null, 2));
 
@@ -470,7 +440,7 @@ app.post("/calls/simulate-answer", (req, res) => {
       });
     }
 
-    console.log(`Bridging simulated bank call to endpoint: ${endpointId}`);
+    console.log(`Bridging simulated incoming call to endpoint: ${endpointId}`);
     res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Connect>
@@ -504,7 +474,8 @@ app.listen(PORT, () => {
   console.log(`  POST /callbacks/bandwidth        - BRTC events + incoming PSTN calls`);
   console.log(`  POST /callbacks/bandwidth/status  - Voice API status (disconnect)`);
   console.log(`  POST /calls/answer               - Outbound call answer BXML callback`);
-  console.log(`  POST /simulate-bank-call         - Trigger simulated incoming call`);
-  console.log(`  POST /calls/simulate-answer      - Simulated call BXML callback`);
+  console.log(`  POST /simulate-incoming-call     - Trigger simulated incoming call`);
+  console.log(`  POST /calls/simulate-incoming-answer - Simulated call BXML callback`);
+  console.log(`  POST /calls/status               - Call status updates`);
   console.log(`  GET  /health                     - Health check`);
 });

@@ -15,7 +15,6 @@
 		AA000006 /* CallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100006 /* CallView.swift */; };
 		AA000008 /* DialpadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100008 /* DialpadView.swift */; };
 		AA000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA100009 /* Assets.xcassets */; };
-		AA00000B /* BandwidthBRTC in Frameworks */ = {isa = PBXBuildFile; productRef = AA30000A /* BandwidthBRTC */; };
 		AA00000C /* CallRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000C /* CallRecord.swift */; };
 		AA00000D /* CallHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000D /* CallHistoryManager.swift */; };
 		AA00000E /* RecentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000E /* RecentsView.swift */; };
@@ -23,6 +22,7 @@
 		AA000011 /* StatsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* StatsOverlayView.swift */; };
 		AA000012 /* afro-pop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AA100012 /* afro-pop.mp3 */; };
 		AA000013 /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* AudioWaveformView.swift */; };
+		D05073BA2F5F0EC6004B3F0C /* BandwidthRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D05073B92F5F0EC6004B3F0C /* BandwidthRTC */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,7 +50,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA00000B /* BandwidthBRTC in Frameworks */,
+				D05073BA2F5F0EC6004B3F0C /* BandwidthRTC in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,14 +78,6 @@
 				AA10000A /* Info.plist */,
 			);
 			path = BRTCSampleApp;
-			sourceTree = "<group>";
-		};
-		AA200009 /* Media */ = {
-			isa = PBXGroup;
-			children = (
-				AA100012 /* afro-pop.mp3 */,
-			);
-			path = Media;
 			sourceTree = "<group>";
 		};
 		AA200003 /* App */ = {
@@ -144,6 +136,14 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		AA200009 /* Media */ = {
+			isa = PBXGroup;
+			children = (
+				AA100012 /* afro-pop.mp3 */,
+			);
+			path = Media;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -161,7 +161,7 @@
 			);
 			name = BRTCSampleApp;
 			packageProductDependencies = (
-				AA30000A /* BandwidthBRTC */,
+				D05073B92F5F0EC6004B3F0C /* BandwidthRTC */,
 			);
 			productName = BRTCSampleApp;
 			productReference = AA10000B /* BRTCSampleApp.app */;
@@ -192,7 +192,7 @@
 			);
 			mainGroup = AA200001;
 			packageReferences = (
-				AA300001 /* XCLocalSwiftPackageReference "../../in-app-calling-swift-sdk" */,
+				D05073B82F5F0EC6004B3F0C /* XCLocalSwiftPackageReference "../../swift-brtc-sdk" */,
 			);
 			productRefGroup = AA200006 /* Products */;
 			projectDirPath = "";
@@ -388,17 +388,16 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		AA300001 /* XCLocalSwiftPackageReference "../../in-app-calling-swift-sdk" */ = {
+		D05073B82F5F0EC6004B3F0C /* XCLocalSwiftPackageReference "../../swift-brtc-sdk" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../in-app-calling-swift-sdk;
+			relativePath = "../../swift-brtc-sdk";
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		AA30000A /* BandwidthBRTC */ = {
+		D05073B92F5F0EC6004B3F0C /* BandwidthRTC */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = AA300001 /* XCLocalSwiftPackageReference "../../in-app-calling-swift-sdk" */;
-			productName = BandwidthBRTC;
+			productName = BandwidthRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
