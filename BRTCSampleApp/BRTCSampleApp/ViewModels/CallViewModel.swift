@@ -590,6 +590,17 @@ final class CallViewModel {
         errorMessage = message
         showError = true
     }
+
+    func formatBitrate(_ bps: Double) -> String {
+        if bps > 1_000_000 {
+            return String(format: "%.1f Mbps", bps / 1_000_000)
+        } else if bps > 1_000 {
+            return String(format: "%.0f kbps", bps / 1_000)
+        } else if bps > 0 {
+            return String(format: "%.0f bps", bps)
+        }
+        return "---"
+    }
 }
 
 // MARK: - Audio Level Accumulator

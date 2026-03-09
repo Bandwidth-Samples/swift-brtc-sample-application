@@ -8,3 +8,7 @@ struct BRTCSampleApp: App {
         }
     }
 }
+
+#Preview {
+    ContentView()
+}

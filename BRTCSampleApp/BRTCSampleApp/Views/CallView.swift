@@ -205,7 +205,8 @@ struct CallView: View {
                 if let stats = viewModel.callStats {
                     StatsOverlayView(
                         stats: stats,
-                        isExpanded: $viewModel.showStatsOverlay
+                        isExpanded: $viewModel.showStatsOverlay,
+                        viewModel: viewModel
                     )
                     .padding(.top, 8)
                     .padding(.horizontal, 16)

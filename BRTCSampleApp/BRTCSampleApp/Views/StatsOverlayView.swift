@@ -6,6 +6,7 @@ import BandwidthRTC
 struct StatsOverlayView: View {
     let stats: CallStatsSnapshot
     @Binding var isExpanded: Bool
+    var viewModel: CallViewModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -99,8 +100,8 @@ struct StatsOverlayView: View {
             statsRow("RTT", value: stats.roundTripTime > 0
                 ? String(format: "%.0f ms", stats.roundTripTime * 1000)
                 : "n/a")
-            statsRow("Bitrate In", value: formatBitrate(stats.inboundBitrate))
-            statsRow("Bitrate Out", value: formatBitrate(stats.outboundBitrate))
+            statsRow("Bitrate In", value: viewModel.formatBitrate(stats.inboundBitrate))
+            statsRow("Bitrate Out", value: viewModel.formatBitrate(stats.outboundBitrate))
             statsRow("Codec", value: stats.codec)
         }
         .padding(12)
@@ -127,14 +128,5 @@ struct StatsOverlayView: View {
         }
     }
 
-    private func formatBitrate(_ bps: Double) -> String {
-        if bps > 1_000_000 {
-            return String(format: "%.1f Mbps", bps / 1_000_000)
-        } else if bps > 1_000 {
-            return String(format: "%.0f kbps", bps / 1_000)
-        } else if bps > 0 {
-            return String(format: "%.0f bps", bps)
-        }
-        return "---"
-    }
+
 }
