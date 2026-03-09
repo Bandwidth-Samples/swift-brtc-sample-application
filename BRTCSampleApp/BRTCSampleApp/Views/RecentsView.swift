@@ -254,5 +254,7 @@ private struct CallRecordRow: View {
 }
 
 #Preview("Empty") {
-    RecentsView(callHistory: CallHistoryManager())
+    let manager = CallHistoryManager()
+    manager.clearAll()
+    return RecentsView(callHistory: manager)
 }
