@@ -1,6 +1,5 @@
 import AVFoundation
 import CallKit
-import WebRTC
 
 /// Manages CallKit integration for native iOS incoming call UI.
 ///
@@ -16,6 +15,14 @@ final class CallKitManager: NSObject, CXProviderDelegate {
 
     /// Called when the user taps Decline or End on the native call UI.
     var onCallEnded: ((UUID) -> Void)?
+
+    /// Called when CallKit (or manual outbound setup) activates the `AVAudioSession`.
+    /// Wire this to `brtcClient.enableAudioSession()`.
+    var onAudioSessionActivated: (() -> Void)?
+
+    /// Called when CallKit (or manual outbound teardown) deactivates the `AVAudioSession`.
+    /// Wire this to `brtcClient.disableAudioSession()`.
+    var onAudioSessionDeactivated: (() -> Void)?
 
     // MARK: - State
 
@@ -97,12 +104,11 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     }
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
-        // Inform WebRTC that CallKit activated the audio session
-        RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
+        onAudioSessionActivated?()
     }
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
-        RTCAudioSession.sharedInstance().audioSessionDidDeactivate(audioSession)
+        onAudioSessionDeactivated?()
     }
 
     // MARK: - Manual Audio Session (non-CallKit outbound calls)
@@ -114,15 +120,15 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         do {
             try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
             try session.setActive(true)
-            RTCAudioSession.sharedInstance().audioSessionDidActivate(session)
+            onAudioSessionActivated?()
         } catch {
             print("[CallKit] Failed to activate audio session: \(error)")
         }
     }
 
     func deactivateAudioSessionForOutboundCall() {
+        onAudioSessionDeactivated?()
         let session = AVAudioSession.sharedInstance()
-        RTCAudioSession.sharedInstance().audioSessionDidDeactivate(session)
         do {
             try session.setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
