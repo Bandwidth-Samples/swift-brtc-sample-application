@@ -78,7 +78,7 @@ final class CallViewModel {
 
     // MARK: - Private
 
-    private let brtc = BandwidthRTC(logLevel: .debug)
+    private let brtc = BandwidthRTCClient(logLevel: .debug)
     private let tokenService = TokenService()
     private let callKitManager = CallKitManager()
     private var localStream: RtcStream?
@@ -517,19 +517,14 @@ final class CallViewModel {
     private func startAudioLevelMonitoring() {
         localAudioLevels = []
         remoteAudioLevels = []
-        // Accumulate RMS over 200 ms windows (9600 frames at 48 kHz).
-        // sumSq/frameCount are closure-local to avoid cross-thread access to @Observable properties.
-        var localSumSq: Float = 0
-        var localFrameCount = 0
+
+        // Thread-safe accumulators for audio level calculations
+        let localAccumulator = AudioLevelAccumulator()
+        let remoteAccumulator = AudioLevelAccumulator()
+
         brtc.onLocalAudioLevel = { [weak self] samples in
-            for s in samples { localSumSq += s * s }
-            localFrameCount += samples.count
-            if localFrameCount >= 9600 {
-                let rms = (localSumSq / Float(localFrameCount)).squareRoot()
-                let db = 20 * log10(max(rms, 1e-7))
-                let level = Float(max(0.0, min(1.0, (db + 70.0) / 70.0)))
-                localSumSq = 0
-                localFrameCount = 0
+            localAccumulator.accumulate(samples)
+            if let level = localAccumulator.getLevel() {
                 Task { @MainActor [weak self] in
                     guard let self else { return }
                     // When mic is muted, show 0 levels (flat waveform)
@@ -540,26 +535,11 @@ final class CallViewModel {
             }
         }
 
-        var remoteSumSq: Float = 0
-        var remoteFrameCount = 0
-        var remoteWindowCount = 0
-        var remoteCallbackFired = false
         brtc.onRemoteAudioLevel = { [weak self] samples in
-            if !remoteCallbackFired {
-                remoteCallbackFired = true
-                let maxAmp = samples.map { abs($0) }.max() ?? 0
-                print("[BRTC] remote audio callback FIRST FIRE: samples=\(samples.count) maxAmp=\(String(format: "%.6f", maxAmp))")
-            }
-            for s in samples { remoteSumSq += s * s }
-            remoteFrameCount += samples.count
-            if remoteFrameCount >= 9600 {
-                let rms = (remoteSumSq / Float(remoteFrameCount)).squareRoot()
-                let db = 20 * log10(max(rms, 1e-7))
-                let level = Float(max(0.0, min(1.0, (db + 70.0) / 70.0)))
-                remoteSumSq = 0
-                remoteFrameCount = 0
-                remoteWindowCount += 1
-                if remoteWindowCount % 5 == 0 {
+            remoteAccumulator.accumulate(samples)
+            if let level = remoteAccumulator.getLevel() {
+                if remoteAccumulator.logThisWindow() {
+                    let (rms, db) = remoteAccumulator.getStats()
                     print("[BRTC] remote audio: rms=\(String(format: "%.5f", rms)) dB=\(String(format: "%.1f", db)) level=\(String(format: "%.3f", level))")
                 }
                 Task { @MainActor [weak self] in
@@ -612,5 +592,63 @@ final class CallViewModel {
     private func showErrorMessage(_ message: String) {
         errorMessage = message
         showError = true
+    }
+}
+
+// MARK: - Audio Level Accumulator
+
+private final class AudioLevelAccumulator {
+    private var sumSq: Float = 0
+    private var frameCount = 0
+    private var windowCount = 0
+    private let lock = NSLock()
+    private var callbackFired = false
+
+    func accumulate(_ samples: [Float]) {
+        lock.lock()
+        defer { lock.unlock() }
+
+        if !callbackFired {
+            callbackFired = true
+            let maxAmp = samples.map { abs($0) }.max() ?? 0
+            print("[BRTC] audio callback FIRST FIRE: samples=\(samples.count) maxAmp=\(String(format: "%.6f", maxAmp))")
+        }
+
+        for s in samples {
+            sumSq += s * s
+        }
+        frameCount += samples.count
+    }
+
+    func getLevel() -> Float? {
+        lock.lock()
+        defer { lock.unlock() }
+
+        guard frameCount >= 9600 else { return nil }
+
+        let rms = (sumSq / Float(frameCount)).squareRoot()
+        let db = 20 * log10(max(rms, 1e-7))
+        let level = Float(max(0.0, min(1.0, (db + 70.0) / 70.0)))
+
+        sumSq = 0
+        frameCount = 0
+        windowCount += 1
+
+        return level
+    }
+
+    func getStats() -> (rms: Float, db: Float) {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let rms = (sumSq / Float(max(1, frameCount))).squareRoot()
+        let db = 20 * log10(max(rms, 1e-7))
+        return (rms, db)
+    }
+
+    func logThisWindow() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return windowCount % 5 == 0
     }
 }

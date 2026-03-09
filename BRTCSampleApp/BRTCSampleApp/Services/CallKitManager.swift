@@ -112,7 +112,7 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     func activateAudioSessionForOutboundCall() {
         let session = AVAudioSession.sharedInstance()
         do {
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
             try session.setActive(true)
             RTCAudioSession.sharedInstance().audioSessionDidActivate(session)
         } catch {
