@@ -163,3 +163,7 @@ private struct FeatureRow: View {
         }
     }
 }
+
+#Preview {
+    ConnectView(viewModel: CallViewModel())
+}

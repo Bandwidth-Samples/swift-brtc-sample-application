@@ -127,6 +127,24 @@ struct StatsOverlayView: View {
                 .contentTransition(.numericText())
         }
     }
+}
 
-
+#Preview {
+    @Previewable @State var isExpanded = true
+    var stats = CallStatsSnapshot()
+    stats.codec = "opus"
+    stats.jitter = 0.008
+    stats.packetsReceived = 1200
+    stats.packetsLost = 3
+    stats.packetsSent = 1100
+    stats.roundTripTime = 0.045
+    stats.audioLevel = 0.65
+    stats.inboundBitrate = 32_000
+    stats.outboundBitrate = 28_000
+    return ZStack(alignment: .top) {
+        Color.black.ignoresSafeArea()
+        StatsOverlayView(stats: stats, isExpanded: $isExpanded, viewModel: CallViewModel())
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+    }
 }

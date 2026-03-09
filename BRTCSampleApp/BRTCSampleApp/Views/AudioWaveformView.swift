@@ -56,3 +56,20 @@ struct AudioWaveformView: View {
         return Array(repeating: 0, count: barCount - levels.count) + levels
     }
 }
+
+#Preview {
+    VStack(spacing: 20) {
+        AudioWaveformView(
+            levels: (0..<50).map { Float(sin(Double($0) / 5.0) * 0.4 + 0.5) },
+            label: "OUTGOING (mic)",
+            color: .cyan
+        )
+        AudioWaveformView(
+            levels: [],
+            label: "INCOMING (remote) 0.000",
+            color: .green
+        )
+    }
+    .padding()
+    .background(.black)
+}

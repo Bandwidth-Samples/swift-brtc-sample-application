@@ -69,3 +69,8 @@ struct DialpadButtonStyle: ButtonStyle {
             .animation(.spring(duration: 0.15), value: configuration.isPressed)
     }
 }
+
+#Preview {
+    DialpadView { _ in }
+        .padding()
+}

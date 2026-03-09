@@ -1,4 +1,5 @@
 import SwiftUI
+import BandwidthRTC
 
 struct CallView: View {
     @Bindable var viewModel: CallViewModel
@@ -419,4 +420,44 @@ struct CallButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
             .animation(.spring(duration: 0.15), value: configuration.isPressed)
     }
+}
+
+#Preview("Dialing") {
+    CallView(viewModel: {
+        let vm = CallViewModel()
+        vm.connectionState = .connected
+        vm.phoneNumber = "5551234567"
+        return vm
+    }())
+}
+
+#Preview("Ringing") {
+    CallView(viewModel: {
+        let vm = CallViewModel()
+        vm.connectionState = .ringing
+        return vm
+    }())
+}
+
+#Preview("In Call") {
+    CallView(viewModel: {
+        let vm = CallViewModel()
+        vm.phoneNumber = "5551234567"
+        vm.connectionState = .inCall
+        vm.callDuration = 65
+        vm.localAudioLevels = (0..<50).map { Float(sin(Double($0) / 5.0) * 0.4 + 0.5) }
+        vm.remoteAudioLevels = (0..<50).map { Float(cos(Double($0) / 4.0) * 0.3 + 0.35) }
+        var stats = CallStatsSnapshot()
+        stats.codec = "opus"
+        stats.jitter = 0.008
+        stats.packetsReceived = 1_200
+        stats.packetsLost = 3
+        stats.packetsSent = 1_100
+        stats.roundTripTime = 0.045
+        stats.audioLevel = 0.65
+        stats.inboundBitrate = 32_000
+        stats.outboundBitrate = 28_000
+        vm.callStats = stats
+        return vm
+    }())
 }

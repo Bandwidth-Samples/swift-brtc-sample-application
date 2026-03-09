@@ -112,3 +112,7 @@ private struct ConnectingView: View {
         }
     }
 }
+
+#Preview {
+    ContentView()
+}

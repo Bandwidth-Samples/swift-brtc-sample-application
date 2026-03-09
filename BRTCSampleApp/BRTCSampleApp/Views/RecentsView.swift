@@ -226,3 +226,33 @@ private struct CallRecordRow: View {
         .font(.system(size: 12, weight: .bold))
     }
 }
+
+#Preview("With Records") {
+    let manager = CallHistoryManager()
+    manager.addRecord(CallDetailRecord(
+        id: UUID(),
+        phoneNumber: "+15551234567",
+        direction: .outbound,
+        timestamp: Date(),
+        duration: 125
+    ))
+    manager.addRecord(CallDetailRecord(
+        id: UUID(),
+        phoneNumber: "+15559876543",
+        direction: .inbound,
+        timestamp: Date().addingTimeInterval(-3600),
+        duration: 0
+    ))
+    manager.addRecord(CallDetailRecord(
+        id: UUID(),
+        phoneNumber: "+15552223333",
+        direction: .inbound,
+        timestamp: Date().addingTimeInterval(-86400),
+        duration: 43
+    ))
+    return RecentsView(callHistory: manager)
+}
+
+#Preview("Empty") {
+    RecentsView(callHistory: CallHistoryManager())
+}
