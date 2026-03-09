@@ -12,7 +12,7 @@ struct RecentsView: View {
         case missed = "Missed"
     }
 
-    private var filteredRecords: [CallRecord] {
+    private var filteredRecords: [CallDetailRecord] {
         switch filter {
         case .all:
             return callHistory.records
@@ -64,8 +64,8 @@ struct RecentsView: View {
         List {
             ForEach(filteredRecords) { record in
                 CallRecordRow(record: record) {
-                    if !record.e164Number.isEmpty {
-                        onSelectNumber?(record.e164Number, record.phoneNumber)
+                    if let e164 = normalizedE164(from: record.phoneNumber) {
+                        onSelectNumber?(e164, record.displayNumber)
                     }
                 }
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
@@ -81,6 +81,25 @@ struct RecentsView: View {
             }
         }
         .listStyle(.plain)
+    }
+
+    /// Convert a stored number into E.164 for redial. Returns nil for labels like "Incoming Call".
+    private func normalizedE164(from rawValue: String) -> String? {
+        let digits = rawValue.filter { $0.isNumber }
+
+        if rawValue.hasPrefix("+") && !digits.isEmpty {
+            return "+\(digits)"
+        }
+
+        if digits.count == 11, digits.first == "1" {
+            return "+\(digits)"
+        }
+
+        if digits.count == 10 {
+            return "+1\(digits)"
+        }
+
+        return nil
     }
 
     // MARK: - Empty State
@@ -141,7 +160,7 @@ struct RecentsView: View {
 // MARK: - Call Record Row
 
 private struct CallRecordRow: View {
-    let record: CallRecord
+    let record: CallDetailRecord
     let onCall: () -> Void
 
     var body: some View {
@@ -152,7 +171,7 @@ private struct CallRecordRow: View {
                     // Inline direction arrow (small, subtle — iOS style)
                     directionArrow
 
-                    Text(record.phoneNumber)
+                    Text(record.displayNumber)
                         .font(.body.weight(.medium))
                         .foregroundStyle(record.isMissed ? .red : .primary)
                         .lineLimit(1)
@@ -181,9 +200,16 @@ private struct CallRecordRow: View {
                     .foregroundStyle(.blue)
             }
             .buttonStyle(.plain)
-            .opacity(record.e164Number.isEmpty ? 0 : 1)
-            .disabled(record.e164Number.isEmpty)
+            .opacity(isDialable ? 1 : 0)
+            .disabled(!isDialable)
         }
+    }
+
+    private var isDialable: Bool {
+        let digits = record.phoneNumber.filter { $0.isNumber }
+        if record.phoneNumber.hasPrefix("+") { return !digits.isEmpty }
+        if digits.count == 11, digits.first == "1" { return true }
+        return digits.count == 10
     }
 
     private var directionArrow: some View {

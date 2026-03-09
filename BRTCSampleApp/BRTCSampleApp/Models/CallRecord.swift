@@ -5,13 +5,17 @@ enum CallDirection: String, Codable {
     case outbound
 }
 
-struct CallRecord: Identifiable, Codable {
+struct CallDetailRecord: Identifiable, Codable {
     let id: UUID
-    let phoneNumber: String       // display format "(555) 123-4567" or "Unknown"
-    let e164Number: String        // "+15551234567" or ""
+    let phoneNumber: String       // raw number or label (e.g. "+15551234567" or "Incoming Call")
     let direction: CallDirection
     let timestamp: Date
     var duration: TimeInterval
+
+    /// Human-friendly number for UI rows, derived from phoneNumber.
+    var displayNumber: String {
+        return Self.formatPhoneNumber(phoneNumber)
+    }
 
     /// A missed call is an inbound call with zero duration.
     var isMissed: Bool { direction == .inbound && duration == 0 }
@@ -71,4 +75,24 @@ struct CallRecord: Identifiable, Codable {
         f.timeStyle = .none
         return f
     }()
+
+    private static func formatPhoneNumber(_ value: String) -> String {
+        let digits = value.filter { $0.isNumber }
+
+        if digits.count == 11, digits.first == "1" {
+            let area = digits.dropFirst(1).prefix(3)
+            let mid = digits.dropFirst(4).prefix(3)
+            let last = digits.dropFirst(7)
+            return "+1 (\(area)) \(mid)-\(last)"
+        }
+
+        if digits.count == 10 {
+            let area = digits.prefix(3)
+            let mid = digits.dropFirst(3).prefix(3)
+            let last = digits.dropFirst(6)
+            return "(\(area)) \(mid)-\(last)"
+        }
+
+        return value
+    }
 }

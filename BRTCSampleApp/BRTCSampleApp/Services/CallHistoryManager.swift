@@ -4,7 +4,7 @@ import Foundation
 final class CallHistoryManager {
     private static let storageKey = "callHistory"
 
-    private(set) var records: [CallRecord] = []
+    private(set) var records: [CallDetailRecord] = []
 
     init() {
         records = Self.load()
@@ -13,7 +13,7 @@ final class CallHistoryManager {
     // MARK: - Public API
 
     /// Add a new call record (inserted at the front).
-    func addRecord(_ record: CallRecord) {
+    func addRecord(_ record: CallDetailRecord) {
         records.insert(record, at: 0)
         save()
     }
@@ -50,9 +50,9 @@ final class CallHistoryManager {
         UserDefaults.standard.set(data, forKey: Self.storageKey)
     }
 
-    private static func load() -> [CallRecord] {
+    private static func load() -> [CallDetailRecord] {
         guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let records = try? JSONDecoder().decode([CallRecord].self, from: data) else {
+              let records = try? JSONDecoder().decode([CallDetailRecord].self, from: data) else {
             return []
         }
         return records

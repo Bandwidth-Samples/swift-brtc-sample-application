@@ -48,8 +48,8 @@ A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://dev.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Bandwidth/hackathon-2026-brtc.git
-cd hackathon-2026-brtc
+git clone https://github.com/Bandwidth/brtc-swift-sample-application.git
+cd brtc-swift-sample-application
 ```
 
 ### 2. Start ngrok
@@ -73,14 +73,19 @@ Edit `.env` with your Bandwidth credentials:
 
 ```env
 # Bandwidth OAuth API Credentials
-BW_ACCOUNT_ID=your_account_id
-BW_CLIENT_ID=your_client_id
-BW_CLIENT_SECRET=your_client_secret
+ACCOUNT_ID=your_account_id
+BW_ID_CLIENT_ID=your_client_id
+BW_ID_CLIENT_SECRET=your_client_secret
 
 # BRTC Endpoint configuration
-BW_ENDPOINT_CALLBACK_URL=https://your-ngrok-url.ngrok-free.app/callbacks/bandwidth
-BW_APPLICATION_ID=your_application_id
-BW_FROM_NUMBER=+15551234567
+CALLBACK_BASE_URL=https://your-ngrok-url.ngrok-free.app
+APPLICATION_ID=your_application_id
+FROM_NUMBER=+15551234567
+
+# Optional
+# BW_ID_HOSTNAME=https://api.bandwidth.com
+# VOICE_URL=https://voice.bandwidth.com/api/v2
+# HTTP_BASE_URL=https://api.bandwidth.com/v2
 
 # Server port (optional, defaults to 3000)
 PORT=3000
@@ -88,12 +93,15 @@ PORT=3000
 
 | Variable | Description |
 |----------|-------------|
-| `BW_ACCOUNT_ID` | Your Bandwidth account ID |
-| `BW_CLIENT_ID` | OAuth client ID from the Bandwidth Dashboard |
-| `BW_CLIENT_SECRET` | OAuth client secret |
-| `BW_ENDPOINT_CALLBACK_URL` | Your ngrok URL + `/callbacks/bandwidth` |
-| `BW_APPLICATION_ID` | Voice API Application ID (must have callback URLs configured) |
-| `BW_FROM_NUMBER` | Bandwidth phone number in E.164 format (e.g., `+15551234567`) |
+| `ACCOUNT_ID` | Your Bandwidth account ID |
+| `BW_ID_CLIENT_ID` | OAuth client ID from the Bandwidth Dashboard |
+| `BW_ID_CLIENT_SECRET` | OAuth client secret |
+| `CALLBACK_BASE_URL` | Your public server base URL (for example, your ngrok URL) |
+| `APPLICATION_ID` | Voice API Application ID (must have callback URLs configured) |
+| `FROM_NUMBER` | Bandwidth phone number in E.164 format (e.g., `+15551234567`) |
+| `BW_ID_HOSTNAME` | Optional OAuth host override (defaults to `https://api.bandwidth.com`) |
+| `VOICE_URL` | Optional Voice API base URL override |
+| `HTTP_BASE_URL` | Optional BRTC API base URL override |
 
 ### 4. Configure your Bandwidth Application
 
@@ -135,7 +143,7 @@ BRTC token server running on http://localhost:3000
 
 **Outbound:** Switch to the Keypad tab, dial a number, tap the green call button.
 
-**Inbound PSTN:** Call your `BW_FROM_NUMBER` from any phone. The call will ring through to the app.
+**Inbound PSTN:** Call your `FROM_NUMBER` from any phone. The call will ring through to the app.
 
 ## Project Structure
 
@@ -203,7 +211,7 @@ The Node.js server exposes the following:
 **Calls disconnect immediately with "rejected"**
 - Verify your ngrok tunnel is running and the URL in `.env` matches
 - Check that the Bandwidth Application's callback URLs point to your ngrok URL
-- Ensure `BW_APPLICATION_ID` matches the application associated with `BW_FROM_NUMBER`
+- Ensure `APPLICATION_ID` matches the application associated with `FROM_NUMBER`
 
 **CallKit doesn't show the incoming call screen**
 - CallKit only works on a real device, not the iOS Simulator

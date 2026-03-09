@@ -181,10 +181,9 @@ final class CallViewModel {
         statusText = "Calling \(formattedPhoneNumber)..."
 
         // Record outbound call in history
-        let record = CallRecord(
+        let record = CallDetailRecord(
             id: UUID(),
-            phoneNumber: formattedPhoneNumber,
-            e164Number: e164PhoneNumber,
+            phoneNumber: e164PhoneNumber,
             direction: .outbound,
             timestamp: Date(),
             duration: 0
@@ -467,10 +466,9 @@ final class CallViewModel {
             connectionState = .connected
             statusText = "Connected"
 
-            let record = CallRecord(
+            let record = CallDetailRecord(
                 id: UUID(),
                 phoneNumber: "Incoming Call",
-                e164Number: "",
                 direction: .inbound,
                 timestamp: Date(),
                 duration: 0
@@ -570,10 +568,9 @@ final class CallViewModel {
     }
 
     private func recordIncomingCall(phoneNumber: String) {
-        let record = CallRecord(
+        let record = CallDetailRecord(
             id: UUID(),
             phoneNumber: phoneNumber,
-            e164Number: "",
             direction: .inbound,
             timestamp: Date(),
             duration: 0
