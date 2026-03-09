@@ -1,6 +1,6 @@
 # Bandwidth BRTC Swift Sample Application
 
-A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://www.bandwidth.com/voice/webrtc/), demonstrating outbound PSTN dialing and live call quality monitoring.
+A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://dev.bandwidth.com/docs/voice/programmable-voice/bxml/connect), demonstrating outbound PSTN dialing and live call quality monitoring.
 
 > **Note:** This project uses the Bandwidth BRTC SDK, which is currently in beta.
 
