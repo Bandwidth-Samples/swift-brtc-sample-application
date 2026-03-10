@@ -19,7 +19,6 @@ final class CallViewModel {
     var serverURL: String = "http://localhost:3000"
     var phoneNumber: String = ""
     var isMicEnabled: Bool = true
-    var isPlayingMedia: Bool = false
     var showError: Bool = false
     var errorMessage: String = ""
     var showDialpad: Bool = false
@@ -211,7 +210,6 @@ final class CallViewModel {
     }
 
     func hangup() {
-        stopMedia()
         finalizeCallRecord()
         callTimer?.invalidate()
         callTimer = nil
@@ -241,27 +239,6 @@ final class CallViewModel {
     func toggleMic() {
         isMicEnabled.toggle()
         brtc.setMicEnabled(isMicEnabled)
-    }
-
-    func playMedia() {
-        guard let url = Bundle.main.url(forResource: "afro-pop", withExtension: "mp3") else {
-            showErrorMessage("Media file not found in bundle")
-            return
-        }
-        isPlayingMedia = true
-        Task { @MainActor in
-            do {
-                try await brtc.publishFileAudio(url: url)
-            } catch {
-                isPlayingMedia = false
-                showErrorMessage(error.localizedDescription)
-            }
-        }
-    }
-
-    func stopMedia() {
-        brtc.stopFileAudio()
-        isPlayingMedia = false
     }
 
     func sendDtmf(_ tone: String) {

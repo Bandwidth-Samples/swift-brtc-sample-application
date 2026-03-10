@@ -231,7 +231,7 @@ struct CallView: View {
                 VStack(spacing: 8) {
                     AudioWaveformView(
                         levels: viewModel.localAudioLevels,
-                        label: viewModel.isPlayingMedia ? "OUTGOING (media)" : "OUTGOING (mic)",
+                        label: "OUTGOING (mic)",
                         color: .cyan
                     )
                     let remoteLevel = viewModel.remoteAudioLevels.last ?? 0
@@ -338,23 +338,6 @@ struct CallView: View {
             ) {
                 withAnimation(.spring(duration: 0.3)) {
                     viewModel.showDialpad.toggle()
-                }
-            }
-
-            Spacer()
-
-            // Play Media
-            CallControlButton(
-                icon: viewModel.isPlayingMedia ? "stop.circle.fill" : "music.note",
-                label: viewModel.isPlayingMedia ? "Stop" : "Play Media",
-                isActive: viewModel.isPlayingMedia,
-                tint: .white,
-                activeColor: .orange
-            ) {
-                if viewModel.isPlayingMedia {
-                    viewModel.stopMedia()
-                } else {
-                    viewModel.playMedia()
                 }
             }
 

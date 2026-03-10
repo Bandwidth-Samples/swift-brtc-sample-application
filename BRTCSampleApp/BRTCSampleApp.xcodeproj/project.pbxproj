@@ -20,7 +20,6 @@
 		AA00000E /* RecentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000E /* RecentsView.swift */; };
 		AA00000F /* CallKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000F /* CallKitManager.swift */; };
 		AA000011 /* StatsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* StatsOverlayView.swift */; };
-		AA000012 /* afro-pop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AA100012 /* afro-pop.mp3 */; };
 		AA000013 /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* AudioWaveformView.swift */; };
 		D05073BA2F5F0EC6004B3F0C /* BandwidthRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D05073B92F5F0EC6004B3F0C /* BandwidthRTC */; };
 /* End PBXBuildFile section */
@@ -41,7 +40,6 @@
 		AA10000E /* RecentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentsView.swift; sourceTree = "<group>"; };
 		AA10000F /* CallKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKitManager.swift; sourceTree = "<group>"; };
 		AA100011 /* StatsOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsOverlayView.swift; sourceTree = "<group>"; };
-		AA100012 /* afro-pop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "afro-pop.mp3"; sourceTree = "<group>"; };
 		AA100013 /* AudioWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioWaveformView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -73,7 +71,6 @@
 				AA200004 /* Views */,
 				AA200005 /* ViewModels */,
 				AA200007 /* Services */,
-				AA200009 /* Media */,
 				AA100009 /* Assets.xcassets */,
 				AA10000A /* Info.plist */,
 			);
@@ -134,14 +131,6 @@
 				AA10000C /* CallRecord.swift */,
 			);
 			path = Models;
-			sourceTree = "<group>";
-		};
-		AA200009 /* Media */ = {
-			isa = PBXGroup;
-			children = (
-				AA100012 /* afro-pop.mp3 */,
-			);
-			path = Media;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -209,7 +198,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA000009 /* Assets.xcassets in Resources */,
-				AA000012 /* afro-pop.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
