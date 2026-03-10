@@ -1,5 +1,6 @@
 import AVFoundation
 import CallKit
+import WebRTC
 
 /// Manages CallKit integration for native iOS incoming call UI.
 ///
@@ -34,11 +35,15 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         provider = CXProvider(configuration: config)
         super.init()
         provider.setDelegate(self, queue: nil) // nil = main queue
+
+        // Tell WebRTC not to activate the AVAudioSession itself — CallKit owns it.
+        // didActivate/didDeactivate delegate methods hand control over explicitly.
+        RTCAudioSession.sharedInstance().useManualAudio = true
     }
 
     // MARK: - Report Incoming Call
 
-    /// Show the native iOS incoming call screen.
+    /// Show the native iOS incoming call screen with a branded caller name.
     func reportIncomingCall(
         callerName: String,
         completion: @escaping (Error?) -> Void
@@ -96,42 +101,13 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     }
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
-        do {
-            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
-            try audioSession.setActive(true)
-        } catch {
-            print("[CallKit] Failed to activate audio session: \(error)")
-        }
+        // Inform WebRTC that CallKit activated the audio session
+        RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
+        RTCAudioSession.sharedInstance().isAudioEnabled = true
     }
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
-        do {
-            try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
-        } catch {
-            print("[CallKit] Failed to deactivate audio session: \(error)")
-        }
-    }
-
-    // MARK: - Manual Audio Session (non-CallKit outbound calls)
-
-    /// Configures and activates the audio session for outbound calls that don't go
-    /// through CallKit. Must be called after the call is established.
-    func activateAudioSessionForOutboundCall() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
-            try session.setActive(true)
-        } catch {
-            print("[CallKit] Failed to activate audio session: \(error)")
-        }
-    }
-
-    func deactivateAudioSessionForOutboundCall() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setActive(false, options: .notifyOthersOnDeactivation)
-        } catch {
-            print("[CallKit] Failed to deactivate audio session: \(error)")
-        }
+        RTCAudioSession.sharedInstance().isAudioEnabled = false
+        RTCAudioSession.sharedInstance().audioSessionDidDeactivate(audioSession)
     }
 }

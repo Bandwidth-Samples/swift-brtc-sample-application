@@ -197,7 +197,9 @@ final class CallViewModel {
                     type: .phoneNumber
                 )
                 if result.accepted {
-                    callKitManager.activateAudioSessionForOutboundCall()
+                    // useManualAudio=true means WebRTC won't start audio on its own.
+                    // For outbound calls that bypass CallKit, enable it explicitly here.
+                    RTCAudioSession.sharedInstance().isAudioEnabled = true
                     statusText = "Ringing..."
                     // Timer and waveform start when the remote party answers (onStreamAvailable).
                 } else {
