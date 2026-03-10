@@ -387,14 +387,6 @@ final class CallViewModel {
                 self?.declineIncomingCall()
             }
         }
-
-        callKitManager.onAudioSessionActivated = { [weak self] in
-            self?.brtc.enableAudioSession()
-        }
-
-        callKitManager.onAudioSessionDeactivated = { [weak self] in
-            self?.brtc.disableAudioSession()
-        }
     }
 
     /// Called when user taps Accept on the incoming call UI (our custom UI or CallKit).

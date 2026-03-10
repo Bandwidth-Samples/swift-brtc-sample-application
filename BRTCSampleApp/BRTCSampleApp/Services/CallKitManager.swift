@@ -16,14 +16,6 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     /// Called when the user taps Decline or End on the native call UI.
     var onCallEnded: ((UUID) -> Void)?
 
-    /// Called when CallKit (or manual outbound setup) activates the `AVAudioSession`.
-    /// Wire this to `brtcClient.enableAudioSession()`.
-    var onAudioSessionActivated: (() -> Void)?
-
-    /// Called when CallKit (or manual outbound teardown) deactivates the `AVAudioSession`.
-    /// Wire this to `brtcClient.disableAudioSession()`.
-    var onAudioSessionDeactivated: (() -> Void)?
-
     // MARK: - State
 
     private(set) var activeCallUUID: UUID?
@@ -104,11 +96,20 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     }
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
-        onAudioSessionActivated?()
+        do {
+            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
+            try audioSession.setActive(true)
+        } catch {
+            print("[CallKit] Failed to activate audio session: \(error)")
+        }
     }
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
-        onAudioSessionDeactivated?()
+        do {
+            try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("[CallKit] Failed to deactivate audio session: \(error)")
+        }
     }
 
     // MARK: - Manual Audio Session (non-CallKit outbound calls)
@@ -120,14 +121,12 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         do {
             try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
             try session.setActive(true)
-            onAudioSessionActivated?()
         } catch {
             print("[CallKit] Failed to activate audio session: \(error)")
         }
     }
 
     func deactivateAudioSessionForOutboundCall() {
-        onAudioSessionDeactivated?()
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setActive(false, options: .notifyOthersOnDeactivation)
