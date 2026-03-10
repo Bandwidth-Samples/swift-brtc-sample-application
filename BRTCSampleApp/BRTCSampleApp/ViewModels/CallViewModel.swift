@@ -12,7 +12,7 @@ enum ConnectionState: Equatable {
 }
 
 @Observable
-final class CallViewModel {
+final class CallViewModel: @unchecked Sendable {
     // MARK: - UI State
 
     var connectionState: ConnectionState = .disconnected
@@ -80,7 +80,6 @@ final class CallViewModel {
 
     private let brtc = BandwidthRTCClient(logLevel: .debug)
     private let tokenService = TokenService()
-    private let callKitManager = CallKitManager()
     private var localStream: RtcStream?
     /// Strong reference to the remote stream so the audio track isn't released.
     private var remoteStream: RtcStream?
@@ -92,12 +91,11 @@ final class CallViewModel {
     private var activeCallRecordId: UUID?
     /// Our BRTC endpoint ID (for the simulated incoming call API).
     private var endpointId: String?
-    /// Holds the incoming stream until the user answers via CallKit.
-    private var pendingIncomingStream: RtcStream?
 
     init() {
-        setupCallbacks()
-        setupCallKitCallbacks()
+        brtc.callDelegate = self
+        brtc.callKitEnabled = true
+        setupStreamCallbacks()
     }
 
     // MARK: - Actions
@@ -110,8 +108,6 @@ final class CallViewModel {
         Task { @MainActor in
             do {
                 // Request microphone permission up-front before WebRTC setup.
-                // This ensures the audio session can properly activate for
-                // playback + recording (iOS 17+ uses AVAudioApplication).
                 let micGranted: Bool
                 if #available(iOS 17.0, *) {
                     micGranted = await AVAudioApplication.requestRecordPermission()
@@ -148,7 +144,6 @@ final class CallViewModel {
     }
 
     func disconnect() {
-        callKitManager.reportCallEnded(reason: .remoteEnded)
         callTimer?.invalidate()
         callTimer = nil
         callDuration = 0
@@ -159,7 +154,6 @@ final class CallViewModel {
         }
         localStream = nil
         remoteStream = nil
-        pendingIncomingStream = nil
         endpointId = nil
         connectionState = .disconnected
         statusText = ""
@@ -198,9 +192,7 @@ final class CallViewModel {
                     type: .phoneNumber
                 )
                 if result.accepted {
-                    callKitManager.activateAudioSessionForOutboundCall()
                     statusText = "Ringing..."
-                    // Timer and waveform start when the remote party answers (onStreamAvailable).
                 } else {
                     statusText = "Call not accepted"
                 }
@@ -218,23 +210,12 @@ final class CallViewModel {
         callDuration = 0
         stopStatsPolling()
         stopAudioLevelMonitoring()
-        callKitManager.reportCallEnded(reason: .remoteEnded)
 
         Task { @MainActor in
-            if !phoneNumber.isEmpty {
-                do {
-                    _ = try await brtc.hangupConnection(
-                        endpoint: e164PhoneNumber,
-                        type: .phoneNumber
-                    )
-                } catch {
-                    // Ignore hangup errors
-                }
-            }
+            try? await brtc.endCall()
             connectionState = .connected
             statusText = "Connected"
             remoteStream = nil
-            pendingIncomingStream = nil
         }
     }
 
@@ -280,166 +261,30 @@ final class CallViewModel {
         statusText = "Incoming call in \(delaySeconds)s..."
 
         // Schedule the ringing UI after a delay.
-        // The actual Voice API call is NOT created yet — it starts when the user taps Accept.
-        // On a real device, CallKit shows the native iOS call screen (triggered by a
-        // PushKit VoIP push in production). In the simulator, CallKit is not supported.
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(delaySeconds)) { [weak self] in
             guard let self, self.connectionState == .connected else { return }
-
-            self.connectionState = .ringing
-
-            #if !targetEnvironment(simulator)
-            self.callKitManager.reportIncomingCall(callerName: "Incoming Call") { error in
-                if let error {
-                    Task { @MainActor in
-                        self.connectionState = .connected
-                        self.statusText = "CallKit error: \(error.localizedDescription)"
-                    }
-                }
-            }
-            #endif
+            // Use the SDK's built-in CallKit reporting
+            self.brtc.reportIncomingCall(callerName: "Incoming Call")
         }
     }
 
-    // MARK: - Private
+    // MARK: - CallKit Actions (called from delegate)
 
-    private func setupCallbacks() {
-        brtc.onStreamAvailable = { [weak self] stream in
-            Task { @MainActor in
-                guard let self else { return }
-                // Retain the remote stream so its audio track isn't deallocated
-                self.remoteStream = stream
-
-                if self.connectionState == .ringing {
-                    // Simulated incoming call: CallKit / our ringing UI is already showing.
-                    // Hold the stream and mute audio until the user taps Accept.
-                    self.pendingIncomingStream = stream
-                    stream.mediaStream.audioTracks.forEach { $0.isEnabled = false }
-                } else if self.connectionState == .connected {
-                    // Real incoming PSTN call — the server already bridged via
-                    // <Connect><Endpoint>, so audio is flowing. Auto-answer
-                    // and transition directly to in-call state.
-                    self.connectionState = .inCall
-                    self.statusText = "Incoming call"
-                    self.recordIncomingCall(phoneNumber: "Incoming Call")
-                    self.startCallTimer()
-                } else if self.connectionState == .inCall {
-                    // Stream arrived after user accepted (simulated incoming call) or during
-                    // an outbound call. Start the timer if not already running.
-                    if self.statusText == "Connecting..." {
-                        self.statusText = "Incoming call"
-                    }
-                    if self.callTimer == nil {
-                        self.startCallTimer()
-                    }
-                }
-            }
-        }
-
-        brtc.onStreamUnavailable = { [weak self] streamId in
-            Task { @MainActor in
-                guard let self else { return }
-                self.remoteStream = nil
-                self.pendingIncomingStream = nil
-
-                if self.connectionState == .ringing {
-                    // Don't dismiss CallKit here — the Voice API bridge can cause
-                    // transient stream unavailable events during setup. If the call
-                    // truly failed, onRemoteDisconnected will fire and handle it.
-                } else if self.connectionState == .inCall {
-                    // Remote side hung up during active call
-                    self.finalizeCallRecord()
-                    self.callKitManager.reportCallEnded(reason: .remoteEnded)
-                    self.callTimer?.invalidate()
-                    self.callTimer = nil
-                    self.callDuration = 0
-                    self.stopStatsPolling()
-                    self.stopAudioLevelMonitoring()
-                    self.connectionState = .connected
-                    self.statusText = "Call ended"
-                } else {
-                    self.statusText = "Remote stream ended"
-                }
-            }
-        }
-
-        brtc.onRemoteDisconnected = { [weak self] in
-            Task { @MainActor in
-                guard let self else { return }
-                if self.connectionState == .ringing {
-                    self.callKitManager.reportCallEnded(reason: .remoteEnded)
-                    self.pendingIncomingStream = nil
-                    self.connectionState = .connected
-                    self.statusText = "Missed call"
-                } else if self.connectionState == .inCall {
-                    self.finalizeCallRecord()
-                    self.callKitManager.reportCallEnded(reason: .remoteEnded)
-                    self.callTimer?.invalidate()
-                    self.callTimer = nil
-                    self.callDuration = 0
-                    self.stopStatsPolling()
-                    self.stopAudioLevelMonitoring()
-                    self.connectionState = .connected
-                    self.statusText = "Call ended"
-                    self.remoteStream = nil
-                }
-            }
-        }
-
-        brtc.onReady = { [weak self] metadata in
-            Task { @MainActor in
-                guard let self else { return }
-                // Capture endpoint ID (redundant with TokenService, but ensures we have it)
-                if let eid = metadata.endpointId {
-                    self.endpointId = eid
-                }
-                self.statusText = "Ready\n\(metadata.endpointId ?? "")"
-            }
-        }
-    }
-
-    private func setupCallKitCallbacks() {
-        callKitManager.onCallAnswered = { [weak self] uuid in
-            Task { @MainActor in
-                self?.acceptIncomingCall()
-            }
-        }
-
-        callKitManager.onCallEnded = { [weak self] uuid in
-            Task { @MainActor in
-                self?.declineIncomingCall()
-            }
-        }
-
-        callKitManager.onAudioSessionActivated = { [weak self] in
-            self?.brtc.enableAudioSession()
-        }
-
-        callKitManager.onAudioSessionDeactivated = { [weak self] in
-            self?.brtc.disableAudioSession()
-        }
-    }
-
-    /// Called when user taps Accept on the incoming call UI (our custom UI or CallKit).
+    /// Called when user taps Accept on the incoming call UI (CallKit or custom).
     func acceptIncomingCall() {
         guard connectionState == .ringing else { return }
-        connectionState = .inCall
-        statusText = "Connecting..."
-        callDuration = 0
 
-        recordIncomingCall(phoneNumber: "Incoming Call")
-
-        // Now create the Voice API call — TTS starts fresh from the beginning.
-        // The server creates a call from BW_FROM_NUMBER to BW_FROM_NUMBER.
-        // B-leg answers with TTS before bridging.
-        // A-leg bridges to the WebRTC endpoint via <Connect><Endpoint>.
-        // When the bridge is established, onStreamAvailable fires and audio flows.
+        // Now create the Voice API call via the server
         guard let endpointId else {
             statusText = "Error: no endpoint"
             return
         }
 
         Task { @MainActor in
+            // Answer through the SDK (unmutes pending stream, manages CallKit)
+            try? await brtc.answerCall()
+
+            // Tell the server to bridge the call
             do {
                 guard let url = URL(string: "\(serverURL)/simulate-incoming-call") else {
                     showErrorMessage("Invalid server URL")
@@ -464,13 +309,12 @@ final class CallViewModel {
         }
     }
 
-    /// Called when user taps Decline on the incoming call UI (our custom UI or CallKit).
+    /// Called when user taps Decline on the incoming call UI (CallKit or custom).
     func declineIncomingCall() {
         if connectionState == .ringing {
-            // User declined before answering — record as missed call
-            callKitManager.reportCallEnded(reason: .declinedElsewhere)
-            pendingIncomingStream = nil
-            remoteStream = nil
+            Task { @MainActor in
+                await brtc.rejectCall()
+            }
             connectionState = .connected
             statusText = "Connected"
 
@@ -483,8 +327,34 @@ final class CallViewModel {
             )
             callHistory.addRecord(record)
         } else if connectionState == .inCall {
-            // User ended an active call via CallKit (e.g. lock screen End button)
             hangup()
+        }
+    }
+
+    // MARK: - Private: Stream Callbacks (for audio visualization)
+
+    private func setupStreamCallbacks() {
+        // Keep raw stream references for audio track lifecycle
+        brtc.onStreamAvailable = { [weak self] stream in
+            Task { @MainActor in
+                self?.remoteStream = stream
+            }
+        }
+
+        brtc.onStreamUnavailable = { [weak self] _ in
+            Task { @MainActor in
+                self?.remoteStream = nil
+            }
+        }
+
+        brtc.onReady = { [weak self] metadata in
+            Task { @MainActor in
+                guard let self else { return }
+                if let eid = metadata.endpointId {
+                    self.endpointId = eid
+                }
+                self.statusText = "Ready\n\(metadata.endpointId ?? "")"
+            }
         }
     }
 
@@ -524,7 +394,6 @@ final class CallViewModel {
         localAudioLevels = []
         remoteAudioLevels = []
 
-        // Thread-safe accumulators for audio level calculations
         let localAccumulator = AudioLevelAccumulator()
         let remoteAccumulator = AudioLevelAccumulator()
 
@@ -533,7 +402,6 @@ final class CallViewModel {
             if let level = localAccumulator.getLevel() {
                 Task { @MainActor [weak self] in
                     guard let self else { return }
-                    // When mic is muted, show 0 levels (flat waveform)
                     let displayLevel = self.isMicEnabled ? level : 0.0
                     self.localAudioLevels.append(displayLevel)
                     if self.localAudioLevels.count > self.waveformCapacity { self.localAudioLevels.removeFirst() }
@@ -544,10 +412,6 @@ final class CallViewModel {
         brtc.onRemoteAudioLevel = { [weak self] samples in
             remoteAccumulator.accumulate(samples)
             if let level = remoteAccumulator.getLevel() {
-                if remoteAccumulator.logThisWindow() {
-                    let (rms, db) = remoteAccumulator.getStats()
-                    print("[BRTC] remote audio: rms=\(String(format: "%.5f", rms)) dB=\(String(format: "%.1f", db)) level=\(String(format: "%.3f", level))")
-                }
                 Task { @MainActor [weak self] in
                     guard let self else { return }
                     self.remoteAudioLevels.append(level)
@@ -555,7 +419,6 @@ final class CallViewModel {
                 }
             }
         }
-        print("[BRTC] remote audio monitoring started")
     }
 
     private func stopAudioLevelMonitoring() {
@@ -611,25 +474,62 @@ final class CallViewModel {
     }
 }
 
+// MARK: - BandwidthRTCCallDelegate
+
+extension CallViewModel: BandwidthRTCCallDelegate {
+    @MainActor
+    func bandwidthRTC(_ client: BandwidthRTCClient, callDidChangeState state: CallState, info: CallInfo) {
+        switch state {
+        case .ringing:
+            connectionState = .ringing
+
+        case .connecting:
+            statusText = "Connecting..."
+
+        case .active:
+            connectionState = .inCall
+            statusText = info.direction == .inbound ? "Incoming call" : "In call"
+            if callTimer == nil {
+                startCallTimer()
+            }
+
+        case .ended:
+            finalizeCallRecord()
+            callTimer?.invalidate()
+            callTimer = nil
+            callDuration = 0
+            stopStatsPolling()
+            stopAudioLevelMonitoring()
+            connectionState = .connected
+            statusText = "Call ended"
+            remoteStream = nil
+
+        case .idle:
+            break
+        }
+    }
+
+    @MainActor
+    func bandwidthRTC(_ client: BandwidthRTCClient, didReceiveIncomingCall info: CallInfo) {
+        recordIncomingCall(phoneNumber: info.remoteParty ?? "Incoming Call")
+    }
+
+    @MainActor
+    func bandwidthRTC(_ client: BandwidthRTCClient, callDidFailWithError error: Error, info: CallInfo?) {
+        showErrorMessage(error.localizedDescription)
+    }
+}
+
 // MARK: - Audio Level Accumulator
 
 private final class AudioLevelAccumulator {
     private var sumSq: Float = 0
     private var frameCount = 0
-    private var windowCount = 0
     private let lock = NSLock()
-    private var callbackFired = false
 
     func accumulate(_ samples: [Float]) {
         lock.lock()
         defer { lock.unlock() }
-
-        if !callbackFired {
-            callbackFired = true
-            let maxAmp = samples.map { abs($0) }.max() ?? 0
-            print("[BRTC] audio callback FIRST FIRE: samples=\(samples.count) maxAmp=\(String(format: "%.6f", maxAmp))")
-        }
-
         for s in samples {
             sumSq += s * s
         }
@@ -648,23 +548,7 @@ private final class AudioLevelAccumulator {
 
         sumSq = 0
         frameCount = 0
-        windowCount += 1
 
         return level
-    }
-
-    func getStats() -> (rms: Float, db: Float) {
-        lock.lock()
-        defer { lock.unlock() }
-
-        let rms = (sumSq / Float(max(1, frameCount))).squareRoot()
-        let db = 20 * log10(max(rms, 1e-7))
-        return (rms, db)
-    }
-
-    func logThisWindow() -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return windowCount % 5 == 0
     }
 }
