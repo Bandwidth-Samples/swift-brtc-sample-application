@@ -110,46 +110,40 @@ struct CallView: View {
 
     private var dialingLayout: some View {
         VStack(spacing: 0) {
-            Spacer().frame(height: 48)
+            Spacer().frame(height: 20)
 
             if let endpointId = viewModel.currentEndpointId, !endpointId.isEmpty {
-                VStack(spacing: 4) {
-                    Text("Endpoint ID")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Text(endpointId)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .padding(.horizontal, 24)
-                }
-                .padding(.bottom, 12)
+                Text(endpointId)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 8)
             }
 
             // Phone number display
             Text(viewModel.formattedPhoneNumber)
-                .font(.system(size: 36, weight: .light))
-                .frame(height: 44)
+                .font(.system(size: 28, weight: .light))
+                .frame(height: 36)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .padding(.horizontal, 32)
                 .contentTransition(.numericText())
 
-            Spacer().frame(height: 24)
+            Spacer().frame(height: 12)
 
             // Dialpad
             DialpadView { digit in
                 viewModel.dialpadInput(digit)
             }
 
-            Spacer().frame(height: 16)
+            Spacer().frame(height: 8)
 
             // Call + Delete row
             HStack {
                 // Spacer to balance delete button
-                Color.clear.frame(width: 80, height: 80)
+                Color.clear.frame(width: 60, height: 60)
 
                 Spacer()
 
@@ -158,11 +152,11 @@ struct CallView: View {
                     viewModel.call()
                 } label: {
                     Image(systemName: "phone.fill")
-                        .font(.system(size: 32))
+                        .font(.system(size: 24))
                         .foregroundStyle(.white)
-                        .frame(width: 80, height: 80)
+                        .frame(width: 60, height: 60)
                         .background(.green.gradient, in: Circle())
-                        .shadow(color: .green.opacity(0.3), radius: 10, y: 4)
+                        .shadow(color: .green.opacity(0.3), radius: 8, y: 3)
                 }
                 .buttonStyle(CallButtonStyle())
 
@@ -174,13 +168,13 @@ struct CallView: View {
                         viewModel.phoneNumber = String(viewModel.phoneNumber.dropLast())
                     } label: {
                         Image(systemName: "delete.backward.fill")
-                            .font(.title2)
+                            .font(.system(size: 18))
                             .foregroundStyle(.secondary)
-                            .frame(width: 80, height: 80)
+                            .frame(width: 60, height: 60)
                     }
                     .transition(.opacity)
                 } else {
-                    Color.clear.frame(width: 80, height: 80)
+                    Color.clear.frame(width: 60, height: 60)
                 }
             }
             .padding(.horizontal, 24)
@@ -293,11 +287,11 @@ struct CallView: View {
             Button {
                 viewModel.disconnect()
             } label: {
-                VStack(spacing: 6) {
+                VStack(spacing: 4) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 70, height: 70)
+                        .frame(width: 52, height: 52)
                         .background(Color(.systemGray), in: Circle())
 
                     Text("Disconnect")
