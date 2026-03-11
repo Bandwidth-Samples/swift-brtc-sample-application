@@ -143,7 +143,7 @@ struct CallView: View {
             // Call + Delete row
             HStack {
                 // Spacer to balance delete button
-                Color.clear.frame(width: 60, height: 60)
+                Color.clear.frame(width: 72, height: 72)
 
                 Spacer()
 
@@ -152,11 +152,11 @@ struct CallView: View {
                     viewModel.call()
                 } label: {
                     Image(systemName: "phone.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: 32))
                         .foregroundStyle(.white)
-                        .frame(width: 60, height: 60)
+                        .frame(width: 80, height: 80)
                         .background(.green.gradient, in: Circle())
-                        .shadow(color: .green.opacity(0.3), radius: 8, y: 3)
+                        .shadow(color: .green.opacity(0.35), radius: 12, y: 5)
                 }
                 .buttonStyle(CallButtonStyle())
 
@@ -168,13 +168,13 @@ struct CallView: View {
                         viewModel.phoneNumber = String(viewModel.phoneNumber.dropLast())
                     } label: {
                         Image(systemName: "delete.backward.fill")
-                            .font(.system(size: 18))
+                            .font(.system(size: 20))
                             .foregroundStyle(.secondary)
-                            .frame(width: 60, height: 60)
+                            .frame(width: 72, height: 72)
                     }
                     .transition(.opacity)
                 } else {
-                    Color.clear.frame(width: 60, height: 60)
+                    Color.clear.frame(width: 72, height: 72)
                 }
             }
             .padding(.horizontal, 24)
