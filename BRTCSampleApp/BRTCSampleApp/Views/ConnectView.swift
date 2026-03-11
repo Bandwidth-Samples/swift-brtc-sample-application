@@ -6,18 +6,7 @@ struct ConnectView: View {
     @FocusState private var urlFieldFocused: Bool
 
     var body: some View {
-        ZStack {
-            // Rich gradient background for depth
-            LinearGradient(
-                colors: [
-                    Color(.systemBackground),
-                    Color.blue.opacity(0.06),
-                    Color(.systemGray6),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
+        Group {
             if urlFieldFocused {
                 // Focused state: only show the URL field centered
                 VStack(spacing: 16) {
@@ -163,6 +152,17 @@ struct ConnectView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: urlFieldFocused)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(.systemBackground),
+                    Color.blue.opacity(0.06),
+                    Color(.systemGray6),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        )
         .onAppear {
             withAnimation(.spring(duration: 0.8, bounce: 0.3)) {
                 appeared = true
