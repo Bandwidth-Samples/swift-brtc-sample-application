@@ -395,7 +395,7 @@ app.all('*', (req: Request, res: Response) => {
     res.sendStatus(404);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`BRTC token server running on http://localhost:${PORT}`);
     console.log(`  Account:      ${ACCOUNT_ID}`);
     console.log(`  App ID:       ${APPLICATION_ID}`);
