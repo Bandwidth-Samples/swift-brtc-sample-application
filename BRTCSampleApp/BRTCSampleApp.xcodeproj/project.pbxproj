@@ -22,7 +22,22 @@
 		AA000011 /* StatsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* StatsOverlayView.swift */; };
 		AA000013 /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* AudioWaveformView.swift */; };
 		D05073BA2F5F0EC6004B3F0C /* BandwidthRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D05073B92F5F0EC6004B3F0C /* BandwidthRTC */; };
+		D054307C2F6209540008C048 /* BandwidthRTC in Embed Frameworks */ = {isa = PBXBuildFile; productRef = D05073B92F5F0EC6004B3F0C /* BandwidthRTC */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D054307D2F6209540008C048 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				D054307C2F6209540008C048 /* BandwidthRTC in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		AA100001 /* BRTCSampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BRTCSampleApp.swift; sourceTree = "<group>"; };
@@ -143,6 +158,7 @@
 				AA600001 /* Sources */,
 				AA400001 /* Frameworks */,
 				AA600002 /* Resources */,
+				D054307D2F6209540008C048 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);

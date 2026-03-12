@@ -131,6 +131,10 @@ final class CallViewModel {
                 self.endpointId = serverEndpointId
                 statusText = "Connecting to BRTC..."
 
+                // Prepare CallKit audio session ownership before WebRTC initializes.
+                // Must happen after mic permission is granted and before brtc.connect().
+                callKitManager.prepareAudioSession()
+
                 try await brtc.connect(authParams: RtcAuthParams(endpointToken: token))
 
                 statusText = "Publishing media..."

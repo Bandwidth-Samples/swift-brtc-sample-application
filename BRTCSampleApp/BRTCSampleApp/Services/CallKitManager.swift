@@ -35,7 +35,11 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         provider = CXProvider(configuration: config)
         super.init()
         provider.setDelegate(self, queue: nil) // nil = main queue
+    }
 
+    /// Call this once before the first BRTC connection is established.
+    /// Deferred from init() to avoid touching RTCAudioSession during app startup.
+    func prepareAudioSession() {
         // Tell WebRTC not to activate the AVAudioSession itself — CallKit owns it.
         // didActivate/didDeactivate delegate methods hand control over explicitly.
         RTCAudioSession.sharedInstance().useManualAudio = true
