@@ -20,6 +20,7 @@
 		AA00000E /* RecentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000E /* RecentsView.swift */; };
 		AA00000F /* CallKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000F /* CallKitManager.swift */; };
 		AA000011 /* StatsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* StatsOverlayView.swift */; };
+		AA000012 /* DetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100012 /* DetailsView.swift */; };
 		AA000013 /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* AudioWaveformView.swift */; };
 		D05073BA2F5F0EC6004B3F0C /* BandwidthRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D05073B92F5F0EC6004B3F0C /* BandwidthRTC */; };
 		D054307C2F6209540008C048 /* BandwidthRTC in Embed Frameworks */ = {isa = PBXBuildFile; productRef = D05073B92F5F0EC6004B3F0C /* BandwidthRTC */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -55,6 +56,7 @@
 		AA10000E /* RecentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentsView.swift; sourceTree = "<group>"; };
 		AA10000F /* CallKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKitManager.swift; sourceTree = "<group>"; };
 		AA100011 /* StatsOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsOverlayView.swift; sourceTree = "<group>"; };
+		AA100012 /* DetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailsView.swift; sourceTree = "<group>"; };
 		AA100013 /* AudioWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioWaveformView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -109,6 +111,7 @@
 				AA100008 /* DialpadView.swift */,
 				AA10000E /* RecentsView.swift */,
 				AA100011 /* StatsOverlayView.swift */,
+				AA100012 /* DetailsView.swift */,
 				AA100013 /* AudioWaveformView.swift */,
 			);
 			path = Views;
@@ -236,6 +239,7 @@
 				AA00000E /* RecentsView.swift in Sources */,
 				AA00000F /* CallKitManager.swift in Sources */,
 				AA000011 /* StatsOverlayView.swift in Sources */,
+				AA000012 /* DetailsView.swift in Sources */,
 				AA000013 /* AudioWaveformView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
