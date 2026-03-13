@@ -112,16 +112,6 @@ struct CallView: View {
         VStack(spacing: 0) {
             Spacer().frame(height: 20)
 
-            if let endpointId = viewModel.currentEndpointId, !endpointId.isEmpty {
-                Text(endpointId)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 8)
-            }
-
             // Phone number display
             Text(viewModel.formattedPhoneNumber)
                 .font(.system(size: 28, weight: .light))
@@ -204,6 +194,16 @@ struct CallView: View {
                     )
                     .padding(.top, 8)
                     .padding(.horizontal, 16)
+                }
+
+                if let endpointId = viewModel.currentEndpointId, !endpointId.isEmpty {
+                    Text(endpointId)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.white.opacity(0.4))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 4)
                 }
 
                 Spacer()

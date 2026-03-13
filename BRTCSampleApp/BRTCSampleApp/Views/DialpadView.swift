@@ -11,9 +11,9 @@ struct DialpadView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             ForEach(Self.keys, id: \.self) { row in
-                HStack(spacing: 24) {
+                HStack(spacing: 16) {
                     ForEach(row) { key in
                         DialpadButton(key: key) {
                             onDigit(key.digit)
@@ -42,7 +42,7 @@ struct DialpadButton: View {
         Button(action: action) {
             VStack(spacing: 2) {
                 Text(key.digit)
-                    .font(.system(size: 32, weight: .light))
+                    .font(.system(size: 26, weight: .light))
 
                 if !key.letters.isEmpty {
                     Text(key.letters)
@@ -54,7 +54,7 @@ struct DialpadButton: View {
                 }
             }
             .foregroundStyle(.primary)
-            .frame(width: 80, height: 80)
+            .frame(width: 68, height: 68)
             .background(.ultraThinMaterial, in: Circle())
         }
         .buttonStyle(DialpadButtonStyle())
