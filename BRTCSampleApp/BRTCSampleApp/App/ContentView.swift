@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var viewModel = CallViewModel()
+    @StateObject private var viewModel = CallViewModel()
 
     var body: some View {
         ZStack {
@@ -31,7 +31,7 @@ struct ContentView: View {
 // MARK: - Connecting View (pulsing animation during connection)
 
 private struct ConnectingView: View {
-    let viewModel: CallViewModel
+    @ObservedObject var viewModel: CallViewModel
     @State private var isPulsing = false
     @State private var ringScale: CGFloat = 1.0
     @State private var ringOpacity: Double = 0.6
@@ -62,7 +62,7 @@ private struct ConnectingView: View {
 
                     // App icon (matches ConnectView)
                     Circle()
-                        .fill(.blue.gradient)
+                        .fill(LinearGradient(colors: [.blue, Color(red: 0.0, green: 0.3, blue: 0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 80, height: 80)
                         .shadow(color: .blue.opacity(0.3), radius: 16, y: 6)
 

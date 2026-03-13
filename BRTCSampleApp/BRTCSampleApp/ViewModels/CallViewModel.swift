@@ -11,28 +11,28 @@ enum ConnectionState: Equatable {
     case inCall
 }
 
-@Observable
-final class CallViewModel {
+final class CallViewModel: ObservableObject {
     // MARK: - UI State
 
-    var connectionState: ConnectionState = .disconnected
-    var serverURL: String = "http://localhost:3000"
-    var phoneNumber: String = ""
-    var isMicEnabled: Bool = true
-    var showError: Bool = false
-    var errorMessage: String = ""
-    var showDialpad: Bool = false
-    var statusText: String = ""
-    var callDuration: TimeInterval = 0
-    var callStats: CallStatsSnapshot?
-    var showStatsOverlay: Bool = false
+    @Published var connectionState: ConnectionState = .disconnected
+    @Published var serverURL: String = "http://localhost:3000"
+    @Published var phoneNumber: String = ""
+    @Published var isMicEnabled: Bool = true
+    @Published var isSpeakerEnabled: Bool = false
+    @Published var showError: Bool = false
+    @Published var errorMessage: String = ""
+    @Published var showDialpad: Bool = false
+    @Published var statusText: String = ""
+    @Published var callDuration: TimeInterval = 0
+    @Published var callStats: CallStatsSnapshot?
+    @Published var showStatsOverlay: Bool = false
 
     // MARK: - Audio Waveform
 
     /// Rolling buffer of normalized (0–1) mic amplitude samples for the outgoing audio waveform.
-    var localAudioLevels: [Float] = []
+    @Published var localAudioLevels: [Float] = []
     /// Rolling buffer of normalized (0–1) remote audio level samples for the incoming audio waveform.
-    var remoteAudioLevels: [Float] = []
+    @Published var remoteAudioLevels: [Float] = []
 
     var callDurationFormatted: String {
         let minutes = Int(callDuration) / 60
@@ -245,6 +245,11 @@ final class CallViewModel {
     func toggleMic() {
         isMicEnabled.toggle()
         brtc.setMicEnabled(isMicEnabled)
+    }
+
+    func toggleSpeaker() {
+        isSpeakerEnabled.toggle()
+        callKitManager.setSpeaker(isSpeakerEnabled)
     }
 
     func sendDtmf(_ tone: String) {

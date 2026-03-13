@@ -22,7 +22,7 @@ struct RecentsView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationView {
             Group {
                 if callHistory.records.isEmpty {
                     emptyState

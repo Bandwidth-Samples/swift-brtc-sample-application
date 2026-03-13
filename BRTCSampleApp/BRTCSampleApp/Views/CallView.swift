@@ -2,7 +2,7 @@ import SwiftUI
 import BandwidthRTC
 
 struct CallView: View {
-    @Bindable var viewModel: CallViewModel
+    @ObservedObject var viewModel: CallViewModel
     @State private var selectedTab: Tab = .keypad
 
     enum Tab { case keypad, recents }
@@ -129,7 +129,6 @@ struct CallView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .padding(.horizontal, 32)
-                .contentTransition(.numericText())
 
             Spacer().frame(height: 12)
 
@@ -155,7 +154,7 @@ struct CallView: View {
                         .font(.system(size: 32))
                         .foregroundStyle(.white)
                         .frame(width: 80, height: 80)
-                        .background(.green.gradient, in: Circle())
+                        .background(LinearGradient(colors: [.green, Color(red: 0.0, green: 0.6, blue: 0.2)], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
                         .shadow(color: .green.opacity(0.35), radius: 12, y: 5)
                 }
                 .buttonStyle(CallButtonStyle())
@@ -323,6 +322,19 @@ struct CallView: View {
 
             Spacer()
 
+            // Speaker
+            CallControlButton(
+                icon: "speaker.wave.3.fill",
+                label: "Speaker",
+                isActive: viewModel.isSpeakerEnabled,
+                tint: .white,
+                activeColor: .blue
+            ) {
+                viewModel.toggleSpeaker()
+            }
+
+            Spacer()
+
             // Keypad
             CallControlButton(
                 icon: "circle.grid.3x3.fill",
@@ -330,7 +342,7 @@ struct CallView: View {
                 isActive: viewModel.showDialpad,
                 tint: .white
             ) {
-                withAnimation(.spring(duration: 0.3)) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     viewModel.showDialpad.toggle()
                 }
             }
@@ -395,7 +407,7 @@ struct CallButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
-            .animation(.spring(duration: 0.15), value: configuration.isPressed)
+            .animation(.spring(response: 0.15, dampingFraction: 0.8), value: configuration.isPressed)
     }
 }
 

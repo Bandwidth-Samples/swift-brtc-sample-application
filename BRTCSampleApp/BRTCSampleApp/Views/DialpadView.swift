@@ -66,7 +66,7 @@ struct DialpadButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
             .opacity(configuration.isPressed ? 0.7 : 1.0)
-            .animation(.spring(duration: 0.15), value: configuration.isPressed)
+            .animation(.spring(response: 0.15, dampingFraction: 0.8), value: configuration.isPressed)
     }
 }
 

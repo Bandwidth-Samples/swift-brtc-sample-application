@@ -1,10 +1,9 @@
 import Foundation
 
-@Observable
-final class CallHistoryManager {
+final class CallHistoryManager: ObservableObject {
     private static let storageKey = "callHistory"
 
-    private(set) var records: [CallDetailRecord] = []
+    @Published private(set) var records: [CallDetailRecord] = []
 
     init() {
         records = Self.load()

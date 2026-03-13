@@ -40,6 +40,18 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     /// Call this once before the first BRTC connection is established.
     /// Deferred from init() to avoid touching RTCAudioSession during app startup.
     func prepareAudioSession() {
+        // Configure AVAudioSession category/mode first so the hardware sample rate
+        // is set to 48 kHz (VoIP mode) before WebRTC's AVAudioEngine initializes.
+        // Without this, the engine crashes with a sample-rate mismatch assertion.
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .allowBluetoothA2DP])
+            try session.setPreferredSampleRate(48000)
+            try session.setPreferredIOBufferDuration(0.005)
+        } catch {
+            print("[CallKit] AVAudioSession config failed: \(error)")
+        }
+
         // Tell WebRTC not to activate the AVAudioSession itself — CallKit owns it.
         // didActivate/didDeactivate delegate methods hand control over explicitly.
         RTCAudioSession.sharedInstance().useManualAudio = true
@@ -104,10 +116,28 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         action.fulfill()
     }
 
+    /// Whether the speaker override should be applied when the session activates.
+    var speakerEnabled: Bool = false
+
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
         // Inform WebRTC that CallKit activated the audio session
         RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
         RTCAudioSession.sharedInstance().isAudioEnabled = true
+        // Re-apply speaker override — overrideOutputAudioPort only works on an active session
+        applyOutputRoute()
+    }
+
+    func setSpeaker(_ enabled: Bool) {
+        speakerEnabled = enabled
+        applyOutputRoute()
+    }
+
+    private func applyOutputRoute() {
+        do {
+            try AVAudioSession.sharedInstance().overrideOutputAudioPort(speakerEnabled ? .speaker : .none)
+        } catch {
+            print("[CallKit] overrideOutputAudioPort failed: \(error)")
+        }
     }
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {

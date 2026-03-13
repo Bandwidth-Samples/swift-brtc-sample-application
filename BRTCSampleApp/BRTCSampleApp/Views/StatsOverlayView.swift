@@ -6,14 +6,14 @@ import BandwidthRTC
 struct StatsOverlayView: View {
     let stats: CallStatsSnapshot
     @Binding var isExpanded: Bool
-    var viewModel: CallViewModel
+    @ObservedObject var viewModel: CallViewModel
 
     var body: some View {
         VStack(spacing: 0) {
             // Pill badge (always visible)
             statsQualityPill
                 .onTapGesture {
-                    withAnimation(.spring(duration: 0.3)) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         isExpanded.toggle()
                     }
                 }
@@ -81,7 +81,7 @@ struct StatsOverlayView: View {
                 Spacer()
                 GeometryReader { geo in
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(.green.gradient)
+                        .fill(LinearGradient(colors: [.green, .green.opacity(0.6)], startPoint: .leading, endPoint: .trailing))
                         .frame(
                             width: geo.size.width * min(CGFloat(stats.audioLevel), 1.0),
                             height: 6
@@ -124,27 +124,31 @@ struct StatsOverlayView: View {
             Text(value)
                 .font(.caption2.monospacedDigit())
                 .foregroundStyle(.white.opacity(0.9))
-                .contentTransition(.numericText())
         }
     }
 }
 
 #Preview {
-    @Previewable @State var isExpanded = true
-    var stats = CallStatsSnapshot()
-    stats.codec = "opus"
-    stats.jitter = 0.008
-    stats.packetsReceived = 1200
-    stats.packetsLost = 3
-    stats.packetsSent = 1100
-    stats.roundTripTime = 0.045
-    stats.audioLevel = 0.65
-    stats.inboundBitrate = 32_000
-    stats.outboundBitrate = 28_000
-    return ZStack(alignment: .top) {
-        Color.black.ignoresSafeArea()
-        StatsOverlayView(stats: stats, isExpanded: $isExpanded, viewModel: CallViewModel())
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
+    struct PreviewWrapper: View {
+        @State var isExpanded = true
+        var body: some View {
+            var stats = CallStatsSnapshot()
+            stats.codec = "opus"
+            stats.jitter = 0.008
+            stats.packetsReceived = 1200
+            stats.packetsLost = 3
+            stats.packetsSent = 1100
+            stats.roundTripTime = 0.045
+            stats.audioLevel = 0.65
+            stats.inboundBitrate = 32_000
+            stats.outboundBitrate = 28_000
+            return ZStack(alignment: .top) {
+                Color.black.ignoresSafeArea()
+                StatsOverlayView(stats: stats, isExpanded: $isExpanded, viewModel: CallViewModel())
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+            }
+        }
     }
+    return PreviewWrapper()
 }

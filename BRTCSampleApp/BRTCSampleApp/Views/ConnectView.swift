@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ConnectView: View {
-    @Bindable var viewModel: CallViewModel
+    @ObservedObject var viewModel: CallViewModel
     @State private var appeared = false
     @FocusState private var urlFieldFocused: Bool
 
@@ -52,7 +52,7 @@ struct ConnectView: View {
                         // App icon
                         ZStack {
                             Circle()
-                                .fill(.blue.gradient)
+                                .fill(LinearGradient(colors: [.blue, Color(red: 0.0, green: 0.3, blue: 0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
                                 .frame(width: 80, height: 80)
                                 .shadow(color: .blue.opacity(0.3), radius: 16, y: 6)
 
@@ -138,7 +138,7 @@ struct ConnectView: View {
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
-                            .background(.blue.gradient, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                            .background(LinearGradient(colors: [.blue, Color(red: 0.0, green: 0.3, blue: 0.9)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
                             .shadow(color: .blue.opacity(0.25), radius: 8, y: 4)
                         }
                         .padding(.horizontal, 24)
@@ -164,7 +164,7 @@ struct ConnectView: View {
             .ignoresSafeArea()
         )
         .onAppear {
-            withAnimation(.spring(duration: 0.8, bounce: 0.3)) {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                 appeared = true
             }
         }
