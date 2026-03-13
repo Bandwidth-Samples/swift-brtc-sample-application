@@ -5,7 +5,7 @@ struct CallView: View {
     @ObservedObject var viewModel: CallViewModel
     @State private var selectedTab: Tab = .keypad
 
-    enum Tab { case keypad, recents }
+    enum Tab { case keypad, recents, details }
 
     var body: some View {
         ZStack {
@@ -31,6 +31,12 @@ struct CallView: View {
                         Label("Recents", systemImage: "clock.fill")
                     }
                     .tag(Tab.recents)
+
+                    DetailsView(viewModel: viewModel)
+                        .tabItem {
+                            Label("Details", systemImage: "info.circle.fill")
+                        }
+                        .tag(Tab.details)
                 }
                 .tint(.blue)
             }
