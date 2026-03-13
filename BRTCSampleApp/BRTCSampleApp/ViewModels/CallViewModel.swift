@@ -29,9 +29,7 @@ final class CallViewModel: ObservableObject {
 
     // MARK: - Audio Waveform
 
-    /// Rolling buffer of normalized (0–1) mic amplitude samples for the outgoing audio waveform.
     @Published var localAudioLevels: [Float] = []
-    /// Rolling buffer of normalized (0–1) remote audio level samples for the incoming audio waveform.
     @Published var remoteAudioLevels: [Float] = []
 
     var callDurationFormatted: String {
@@ -81,17 +79,13 @@ final class CallViewModel: ObservableObject {
     private let tokenService = TokenService()
     private let callKitManager = CallKitManager()
     private var localStream: RtcStream?
-    /// Strong reference to the remote stream so the audio track isn't released.
     private var remoteStream: RtcStream?
     private var callTimer: Timer?
     private var statsTimer: Timer?
     private var previousStatsSnapshot: CallStatsSnapshot?
     private let waveformCapacity = 50
-    /// Tracks the active call record so we can update its duration when the call ends.
     private var activeCallRecordId: UUID?
-    /// Our BRTC endpoint ID (for the simulated incoming call API).
     private var endpointId: String?
-    /// Holds the incoming stream until the user answers via CallKit.
     private var pendingIncomingStream: RtcStream?
 
     init() {
@@ -108,9 +102,6 @@ final class CallViewModel: ObservableObject {
 
         Task { @MainActor in
             do {
-                // Request microphone permission up-front before WebRTC setup.
-                // This ensures the audio session can properly activate for
-                // playback + recording (iOS 17+ uses AVAudioApplication).
                 let micGranted: Bool
                 if #available(iOS 17.0, *) {
                     micGranted = await AVAudioApplication.requestRecordPermission()
@@ -131,8 +122,6 @@ final class CallViewModel: ObservableObject {
                 self.endpointId = serverEndpointId
                 statusText = "Connecting to BRTC..."
 
-                // Prepare CallKit audio session ownership before WebRTC initializes.
-                // Must happen after mic permission is granted and before brtc.connect().
                 callKitManager.prepareAudioSession()
 
                 try await brtc.connect(authParams: RtcAuthParams(endpointToken: token))
@@ -295,25 +284,17 @@ final class CallViewModel: ObservableObject {
         brtc.onStreamAvailable = { [weak self] stream in
             Task { @MainActor in
                 guard let self else { return }
-                // Retain the remote stream so its audio track isn't deallocated
                 self.remoteStream = stream
 
                 if self.connectionState == .ringing {
-                    // Simulated incoming call: CallKit / our ringing UI is already showing.
-                    // Hold the stream and mute audio until the user taps Accept.
                     self.pendingIncomingStream = stream
                     stream.mediaStream.audioTracks.forEach { $0.isEnabled = false }
                 } else if self.connectionState == .connected {
-                    // Real incoming PSTN call — the server already bridged via
-                    // <Connect><Endpoint>, so audio is flowing. Auto-answer
-                    // and transition directly to in-call state.
                     self.connectionState = .inCall
                     self.statusText = "Incoming call"
                     self.recordIncomingCall(phoneNumber: "Incoming Call")
                     self.startCallTimer()
                 } else if self.connectionState == .inCall {
-                    // Stream arrived after user accepted (simulated incoming call) or during
-                    // an outbound call. Start the timer if not already running.
                     if self.statusText == "Connecting..." {
                         self.statusText = "Incoming call"
                     }
@@ -513,7 +494,6 @@ final class CallViewModel: ObservableObject {
             if let level = localAccumulator.getLevel() {
                 Task { @MainActor [weak self] in
                     guard let self else { return }
-                    // When mic is muted, show 0 levels (flat waveform)
                     let displayLevel = self.isMicEnabled ? level : 0.0
                     self.localAudioLevels.append(displayLevel)
                     if self.localAudioLevels.count > self.waveformCapacity { self.localAudioLevels.removeFirst() }
@@ -524,10 +504,6 @@ final class CallViewModel: ObservableObject {
         brtc.onRemoteAudioLevel = { [weak self] samples in
             remoteAccumulator.accumulate(samples)
             if let level = remoteAccumulator.getLevel() {
-                if remoteAccumulator.logThisWindow() {
-                    let (rms, db) = remoteAccumulator.getStats()
-                    print("[BRTC] remote audio: rms=\(String(format: "%.5f", rms)) dB=\(String(format: "%.1f", db)) level=\(String(format: "%.3f", level))")
-                }
                 Task { @MainActor [weak self] in
                     guard let self else { return }
                     self.remoteAudioLevels.append(level)
@@ -535,7 +511,6 @@ final class CallViewModel: ObservableObject {
                 }
             }
         }
-        print("[BRTC] remote audio monitoring started")
     }
 
     private func stopAudioLevelMonitoring() {
@@ -598,17 +573,10 @@ private final class AudioLevelAccumulator {
     private var frameCount = 0
     private var windowCount = 0
     private let lock = NSLock()
-    private var callbackFired = false
 
     func accumulate(_ samples: [Float]) {
         lock.lock()
         defer { lock.unlock() }
-
-        if !callbackFired {
-            callbackFired = true
-            let maxAmp = samples.map { abs($0) }.max() ?? 0
-            print("[BRTC] audio callback FIRST FIRE: samples=\(samples.count) maxAmp=\(String(format: "%.6f", maxAmp))")
-        }
 
         for s in samples {
             sumSq += s * s
@@ -640,11 +608,5 @@ private final class AudioLevelAccumulator {
         let rms = (sumSq / Float(max(1, frameCount))).squareRoot()
         let db = 20 * log10(max(rms, 1e-7))
         return (rms, db)
-    }
-
-    func logThisWindow() -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return windowCount % 5 == 0
     }
 }

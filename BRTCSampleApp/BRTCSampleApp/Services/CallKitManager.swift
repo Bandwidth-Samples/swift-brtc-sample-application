@@ -17,9 +17,13 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     /// Called when the user taps Decline or End on the native call UI.
     var onCallEnded: ((UUID) -> Void)?
 
+    /// Called when CallKit accepts the outbound CXStartCallAction.
+    var onOutboundCallStarted: ((UUID) -> Void)?
+
     // MARK: - State
 
     private(set) var activeCallUUID: UUID?
+    private var isOutboundCall: Bool = false
 
     // MARK: - CallKit
 
@@ -34,15 +38,11 @@ final class CallKitManager: NSObject, CXProviderDelegate {
 
         provider = CXProvider(configuration: config)
         super.init()
-        provider.setDelegate(self, queue: nil) // nil = main queue
+        provider.setDelegate(self, queue: nil)
     }
 
     /// Call this once before the first BRTC connection is established.
-    /// Deferred from init() to avoid touching RTCAudioSession during app startup.
     func prepareAudioSession() {
-        // Configure AVAudioSession category/mode first so the hardware sample rate
-        // is set to 48 kHz (VoIP mode) before WebRTC's AVAudioEngine initializes.
-        // Without this, the engine crashes with a sample-rate mismatch assertion.
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .allowBluetoothA2DP])
@@ -52,8 +52,6 @@ final class CallKitManager: NSObject, CXProviderDelegate {
             print("[CallKit] AVAudioSession config failed: \(error)")
         }
 
-        // Tell WebRTC not to activate the AVAudioSession itself — CallKit owns it.
-        // didActivate/didDeactivate delegate methods hand control over explicitly.
         RTCAudioSession.sharedInstance().useManualAudio = true
     }
 
@@ -85,6 +83,28 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         }
     }
 
+    // MARK: - Start Outbound Call
+
+    /// Register an outbound call with CallKit for system UI integration.
+    func startOutboundCall(handle: String) {
+        let uuid = UUID()
+        activeCallUUID = uuid
+        isOutboundCall = true
+
+        let cxHandle = CXHandle(type: .generic, value: handle)
+        let action = CXStartCallAction(call: uuid, handle: cxHandle)
+        action.isVideo = false
+
+        let transaction = CXTransaction(action: action)
+        callController.request(transaction) { error in
+            if let error {
+                print("[CallKit] CXStartCallAction failed: \(error)")
+                self.activeCallUUID = nil
+                self.isOutboundCall = false
+            }
+        }
+    }
+
     // MARK: - Report Call Ended (from app side)
 
     /// Tell CallKit a call ended (e.g. remote hangup or local hangup).
@@ -92,12 +112,20 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         guard let uuid = activeCallUUID else { return }
         provider.reportCall(with: uuid, endedAt: Date(), reason: reason)
         activeCallUUID = nil
+        isOutboundCall = false
     }
 
     // MARK: - CXProviderDelegate
 
     func providerDidReset(_ provider: CXProvider) {
         activeCallUUID = nil
+        isOutboundCall = false
+    }
+
+    func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
+        provider.reportOutgoingCall(with: action.callUUID, startedConnectingAt: Date())
+        action.fulfill()
+        onOutboundCallStarted?(action.callUUID)
     }
 
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
@@ -107,11 +135,11 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     }
 
     func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
-        // User tapped Decline (before answering) or End (during call)
         let uuid = action.callUUID
         if uuid == activeCallUUID {
             onCallEnded?(uuid)
             activeCallUUID = nil
+            isOutboundCall = false
         }
         action.fulfill()
     }
@@ -120,10 +148,17 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     var speakerEnabled: Bool = false
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
-        // Inform WebRTC that CallKit activated the audio session
-        RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
-        RTCAudioSession.sharedInstance().isAudioEnabled = true
-        // Re-apply speaker override — overrideOutputAudioPort only works on an active session
+        let rtcSession = RTCAudioSession.sharedInstance()
+
+        if isOutboundCall {
+            // For outbound calls, skip audioSessionDidActivate to avoid resetting the already-initialized engine
+            rtcSession.isAudioEnabled = true
+        } else {
+            // For incoming calls, the engine needs full activation
+            rtcSession.audioSessionDidActivate(audioSession)
+            rtcSession.isAudioEnabled = true
+        }
+
         applyOutputRoute()
     }
 

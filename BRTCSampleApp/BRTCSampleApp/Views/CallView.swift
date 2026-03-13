@@ -37,7 +37,7 @@ struct CallView: View {
         }
     }
 
-    // MARK: - Ringing Layout (CallKit incoming call UI is active)
+    // MARK: - Ringing Layout
 
     private var ringingLayout: some View {
         ZStack {
@@ -46,7 +46,6 @@ struct CallView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // Caller info
                 Image(systemName: "building.columns.fill")
                     .font(.system(size: 64))
                     .foregroundStyle(.blue)
@@ -63,9 +62,7 @@ struct CallView: View {
 
                 Spacer()
 
-                // Accept / Decline buttons (iOS-style)
                 HStack(spacing: 80) {
-                    // Decline
                     Button {
                         viewModel.declineIncomingCall()
                     } label: {
@@ -83,7 +80,6 @@ struct CallView: View {
                     }
                     .buttonStyle(CallButtonStyle())
 
-                    // Accept
                     Button {
                         viewModel.acceptIncomingCall()
                     } label: {
@@ -106,13 +102,12 @@ struct CallView: View {
         }
     }
 
-    // MARK: - Dialing Layout (connected, not yet in call)
+    // MARK: - Dialing Layout
 
     private var dialingLayout: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: 20)
 
-            // Phone number display
             Text(viewModel.formattedPhoneNumber)
                 .font(.system(size: 28, weight: .light))
                 .frame(height: 36)
@@ -122,21 +117,17 @@ struct CallView: View {
 
             Spacer().frame(height: 12)
 
-            // Dialpad
             DialpadView { digit in
                 viewModel.dialpadInput(digit)
             }
 
             Spacer().frame(height: 8)
 
-            // Call + Delete row
             HStack {
-                // Spacer to balance delete button
                 Color.clear.frame(width: 72, height: 72)
 
                 Spacer()
 
-                // Green CALL button
                 Button {
                     viewModel.call()
                 } label: {
@@ -151,7 +142,6 @@ struct CallView: View {
 
                 Spacer()
 
-                // Delete/backspace button
                 if !viewModel.phoneNumber.isEmpty {
                     Button {
                         viewModel.phoneNumber = String(viewModel.phoneNumber.dropLast())
@@ -170,7 +160,6 @@ struct CallView: View {
 
             Spacer()
 
-            // Bottom controls bar
             dialingBottomControls
                 .padding(.bottom, 16)
         }
@@ -180,12 +169,9 @@ struct CallView: View {
 
     private var inCallLayout: some View {
         ZStack {
-            // Full-screen dark background
             Color.black.ignoresSafeArea()
 
-            // Overlay content
             VStack(spacing: 0) {
-                // Stats overlay (top of screen)
                 if let stats = viewModel.callStats {
                     StatsOverlayView(
                         stats: stats,
@@ -208,7 +194,6 @@ struct CallView: View {
 
                 Spacer()
 
-                // Contact info + timer
                 VStack(spacing: 4) {
                     Text(viewModel.formattedPhoneNumber)
                         .font(.system(size: 28, weight: .regular))
@@ -237,7 +222,6 @@ struct CallView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 12)
 
-                // Dialpad overlay (if toggled during a call)
                 if viewModel.showDialpad {
                     DialpadView { tone in
                         viewModel.sendDtmf(tone)
@@ -247,7 +231,6 @@ struct CallView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
-                // Bottom controls on dark gradient
                 inCallBottomControls
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
@@ -270,7 +253,6 @@ struct CallView: View {
         HStack(spacing: 0) {
             Spacer()
 
-            // Mic
             CallControlButton(
                 icon: "mic.slash.fill",
                 label: "Mute",
@@ -282,7 +264,6 @@ struct CallView: View {
 
             Spacer()
 
-            // Disconnect
             Button {
                 viewModel.disconnect()
             } label: {
@@ -304,13 +285,12 @@ struct CallView: View {
         }
     }
 
-    // MARK: - Bottom Controls (In Call Mode)
+    // MARK: - In Call Bottom Controls
 
     private var inCallBottomControls: some View {
         HStack(spacing: 0) {
             Spacer()
 
-            // Mic
             CallControlButton(
                 icon: "mic.slash.fill",
                 label: "Mute",
@@ -322,7 +302,6 @@ struct CallView: View {
 
             Spacer()
 
-            // Speaker
             CallControlButton(
                 icon: "speaker.wave.3.fill",
                 label: "Speaker",
@@ -335,7 +314,6 @@ struct CallView: View {
 
             Spacer()
 
-            // Keypad
             CallControlButton(
                 icon: "circle.grid.3x3.fill",
                 label: "Keypad",
@@ -349,7 +327,6 @@ struct CallView: View {
 
             Spacer()
 
-            // Hangup
             Button {
                 viewModel.hangup()
             } label: {
