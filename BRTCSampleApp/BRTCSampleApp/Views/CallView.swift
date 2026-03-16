@@ -143,8 +143,10 @@ struct CallView: View {
                         .frame(width: 80, height: 80)
                         .background(LinearGradient(colors: [.green, Color(red: 0.0, green: 0.6, blue: 0.2)], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
                         .shadow(color: .green.opacity(0.35), radius: 12, y: 5)
+                        .opacity(viewModel.isPhoneNumberValid ? 1.0 : 0.4)
                 }
                 .buttonStyle(CallButtonStyle())
+                .disabled(!viewModel.isPhoneNumberValid)
 
                 Spacer()
 

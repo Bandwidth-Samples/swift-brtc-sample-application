@@ -47,10 +47,7 @@ A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://dev.
 
 ### 1. Clone the repository
 
-```bash
-git clone https://github.com/Bandwidth/brtc-swift-sample-application.git
-cd brtc-swift-sample-application
-```
+Clone the repository using `git clone` and change your directory to the cloned repo.
 
 ### 2. Start ngrok
 
@@ -202,7 +199,54 @@ The Node.js server exposes the following:
 | `GET` | `/health` | Health check |
 | `GET` | `/debug/endpoints` | Inspect the in-memory endpoint map |
 
+## Connecting to a Physical iPhone
+
+When running the app on a real iPhone, it needs to reach the Node.js server over the network. There are two approaches:
+
+### Option A: Internet Sharing over USB (recommended for local development)
+
+If your iPhone and Mac are on a network that blocks device-to-device traffic (common on corporate WiFi), you can share your Mac's network directly to the iPhone over USB:
+
+1. Connect your iPhone to your Mac via USB cable
+2. On your Mac, go to **System Settings > General > Sharing > Internet Sharing**
+3. Set "Share your connection from" to **Wi-Fi**
+4. Check **iPhone USB** in the "To computers using" list
+5. Enable Internet Sharing
+6. Find the bridge IP address:
+   ```bash
+   ipconfig getifaddr bridge100
+   ```
+   This typically returns something like `192.168.3.1`.
+7. In the app's Connect screen, enter `http://<bridge-ip>:3000` (e.g., `http://192.168.3.1:3000`)
+
+### Option B: Same Wi-Fi network
+
+If your Mac and iPhone are on the same Wi-Fi network and the network allows device-to-device traffic:
+
+1. Find your Mac's local IP:
+   ```bash
+   ipconfig getifaddr en0
+   ```
+2. In the app's Connect screen, enter `http://<mac-ip>:3000` (e.g., `http://192.168.1.100:3000`)
+
+> **Note:** Many corporate and guest Wi-Fi networks use client isolation, which blocks connections between devices. If the connection times out, use Option A or ngrok instead.
+
+### Option C: ngrok
+
+If neither local option works, use ngrok to create a public tunnel:
+
+```bash
+ngrok http 3000
+```
+
+Enter the `https://` forwarding URL in the app. This also works for testing from any network.
+
 ## Troubleshooting
+
+**iPhone can't connect to the server**
+- If using a local IP and the connection times out, your network likely blocks device-to-device traffic. Try Internet Sharing over USB (see above) or ngrok.
+- Verify the server is running and reachable from your Mac: `curl http://localhost:3000/health`
+- Make sure you include `http://` in the server URL
 
 **"No WebRTC endpoint available" when calling the Bandwidth number**
 - Make sure the iOS app is connected (green "Connected" state) before calling

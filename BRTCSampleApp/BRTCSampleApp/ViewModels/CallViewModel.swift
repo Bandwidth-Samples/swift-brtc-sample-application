@@ -58,6 +58,12 @@ final class CallViewModel: ObservableObject {
         return phoneNumber
     }
 
+    /// Whether the current phone number input is valid for placing a call.
+    var isPhoneNumberValid: Bool {
+        let digits = phoneNumber.filter { $0.isNumber }
+        return digits.count >= 10
+    }
+
     /// E.164 formatted number for API calls (e.g. +12225551234)
     var e164PhoneNumber: String {
         let digits = phoneNumber.filter { $0.isNumber }
@@ -75,7 +81,7 @@ final class CallViewModel: ObservableObject {
 
     // MARK: - Private
 
-    private let brtc = BandwidthRTCClient(logLevel: .debug)
+    private let brtc = BandwidthRTCClient()
     private let tokenService = TokenService()
     private let callKitManager = CallKitManager()
     private var localStream: RtcStream?
@@ -164,10 +170,7 @@ final class CallViewModel: ObservableObject {
     }
 
     func call() {
-        guard !phoneNumber.isEmpty else {
-            showErrorMessage("Enter a phone number")
-            return
-        }
+        guard isPhoneNumberValid else { return }
 
         connectionState = .inCall
         statusText = "Calling \(formattedPhoneNumber)..."
@@ -221,7 +224,7 @@ final class CallViewModel: ObservableObject {
                         type: .phoneNumber
                     )
                 } catch {
-                    // Ignore hangup errors
+                    print("[CallViewModel] Hangup failed: \(error)")
                 }
             }
             connectionState = .connected
@@ -284,6 +287,11 @@ final class CallViewModel: ObservableObject {
         brtc.onStreamAvailable = { [weak self] stream in
             Task { @MainActor in
                 guard let self else { return }
+                if self.connectionState == .connecting || self.connectionState == .disconnected {
+                    print("[CallViewModel] Stream arrived in \(self.connectionState) state — ignoring")
+                    return
+                }
+
                 self.remoteStream = stream
 
                 if self.connectionState == .ringing {
@@ -413,10 +421,12 @@ final class CallViewModel: ObservableObject {
                 let body: [String: Any] = ["endpointId": endpointId, "delaySeconds": 0]
                 request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-                let (_, response) = try await URLSession.shared.data(for: request)
+                let (data, response) = try await URLSession.shared.data(for: request)
                 guard let httpResponse = response as? HTTPURLResponse,
                       (200...299).contains(httpResponse.statusCode) else {
-                    showErrorMessage("Server returned error")
+                    let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                    let body = String(data: data, encoding: .utf8) ?? ""
+                    showErrorMessage("Server returned \(statusCode): \(body)")
                     return
                 }
             } catch {

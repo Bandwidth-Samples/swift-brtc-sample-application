@@ -1,5 +1,6 @@
 import AVFoundation
 import CallKit
+import os
 import WebRTC
 
 /// Manages CallKit integration for native iOS incoming call UI.
@@ -8,6 +9,8 @@ import WebRTC
 /// so the system displays the native incoming call screen (even when backgrounded).
 /// The `onCallAnswered` / `onCallEnded` closures communicate back to CallViewModel.
 final class CallKitManager: NSObject, CXProviderDelegate {
+
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "BRTCSampleApp", category: "CallKit")
 
     // MARK: - Callbacks (to CallViewModel)
 
@@ -49,7 +52,7 @@ final class CallKitManager: NSObject, CXProviderDelegate {
             try session.setPreferredSampleRate(48000)
             try session.setPreferredIOBufferDuration(0.005)
         } catch {
-            print("[CallKit] AVAudioSession config failed: \(error)")
+            Self.logger.error("AVAudioSession config failed: \(error)")
         }
 
         RTCAudioSession.sharedInstance().useManualAudio = true
@@ -77,7 +80,7 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         provider.reportNewIncomingCall(with: uuid, update: update) { error in
             if let error {
                 self.activeCallUUID = nil
-                print("[CallKit] Failed to report incoming call: \(error)")
+                Self.logger.error("Failed to report incoming call: \(error)")
             }
             completion(error)
         }
@@ -98,7 +101,7 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         let transaction = CXTransaction(action: action)
         callController.request(transaction) { error in
             if let error {
-                print("[CallKit] CXStartCallAction failed: \(error)")
+                Self.logger.error("CXStartCallAction failed: \(error)")
                 self.activeCallUUID = nil
                 self.isOutboundCall = false
             }
@@ -171,7 +174,7 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         do {
             try AVAudioSession.sharedInstance().overrideOutputAudioPort(speakerEnabled ? .speaker : .none)
         } catch {
-            print("[CallKit] overrideOutputAudioPort failed: \(error)")
+            Self.logger.error("overrideOutputAudioPort failed: \(error)")
         }
     }
 

@@ -17,10 +17,11 @@ final class TokenService {
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            let body = String(data: data, encoding: .utf8) ?? ""
             throw NSError(
                 domain: "TokenService",
                 code: statusCode,
-                userInfo: [NSLocalizedDescriptionKey: "Server returned status \(statusCode)"]
+                userInfo: [NSLocalizedDescriptionKey: "Server returned \(statusCode): \(body)"]
             )
         }
 
