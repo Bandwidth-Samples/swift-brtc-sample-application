@@ -200,7 +200,7 @@
 			);
 			mainGroup = AA200001;
 			packageReferences = (
-				D05073B82F5F0EC6004B3F0C /* XCLocalSwiftPackageReference "../../swift-brtc-sdk" */,
+				D05073B82F5F0EC6004B3F0C /* XCRemoteSwiftPackageReference "swift-brtc-sdk" */,
 			);
 			productRefGroup = AA200006 /* Products */;
 			projectDirPath = "";
@@ -401,16 +401,21 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		D05073B82F5F0EC6004B3F0C /* XCLocalSwiftPackageReference "../../swift-brtc-sdk" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../swift-brtc-sdk";
+/* Begin XCRemoteSwiftPackageReference section */
+		D05073B82F5F0EC6004B3F0C /* XCRemoteSwiftPackageReference "swift-brtc-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Bandwidth/swift-brtc-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		D05073B92F5F0EC6004B3F0C /* BandwidthRTC */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = D05073B82F5F0EC6004B3F0C /* XCRemoteSwiftPackageReference "swift-brtc-sdk" */;
 			productName = BandwidthRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
