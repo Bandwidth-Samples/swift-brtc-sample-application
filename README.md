@@ -1,5 +1,7 @@
 # Bandwidth BRTC Swift Sample Application
 
+<img src="BRTCSampleApp/BRTCSampleApp/Assets.xcassets/AppIcon.appiconset/WebRTC_App-Icon_Apple.png" alt="App Icon" width="120" />
+
 A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://dev.bandwidth.com/docs/brtc), demonstrating outbound PSTN dialing and live call quality monitoring.
 
 > **Note:** This project uses the Bandwidth BRTC SDK, which is currently in beta.
