@@ -69,6 +69,10 @@ const {
 let endpointAvailableMap = new Map<string, boolean>();
 // Call ID -> Endpoint ID
 let endpointCallIdMap = new Map<string, string>();
+// Endpoint ID -> Call Status (tracks PSTN leg status for app polling)
+let endpointCallStatusMap = new Map<string, { callId: string; status: string; cause?: string }>();
+// Endpoint ID -> Hangup cooldown timestamp (ignore outbound requests briefly after hangup)
+let endpointHangupCooldown = new Map<string, number>();
 
 // --- OAuth Token Management ---
 
@@ -104,10 +108,8 @@ async function placeCall(endpointId: string, toNumber: string, fromNumber: strin
         throw new Error('Endpoint is not available');
     }
 
-    const configuration = new Configuration({
-        clientId: BW_ID_CLIENT_ID,
-        clientSecret: BW_ID_CLIENT_SECRET,
-    });
+    const token = await getAuthToken();
+    const configuration = new Configuration({ accessToken: token });
 
     if (VOICE_URL !== PROD_VOICE_URL) {
         console.log(`Using custom voice URL: ${VOICE_URL}`);
@@ -126,6 +128,7 @@ async function placeCall(endpointId: string, toNumber: string, fromNumber: strin
     const callId = response.data.callId;
     console.log(`Placed outbound call ${callId} from endpoint ${endpointId} to ${toNumber}`);
     endpointCallIdMap.set(callId, endpointId);
+    endpointCallStatusMap.set(endpointId, { callId, status: 'ringing' });
     return callId;
 }
 
@@ -153,9 +156,10 @@ function releaseEndpoint(endpointId: string) {
     }
 }
 
-function handleCallDisconnect(callId: string) {
+function handleCallDisconnect(callId: string, cause?: string) {
     const endpointId = endpointCallIdMap.get(callId);
     if (endpointId) {
+        endpointCallStatusMap.set(endpointId, { callId, status: 'disconnected', cause });
         releaseEndpoint(endpointId);
     }
     endpointCallIdMap.delete(callId);
@@ -289,6 +293,12 @@ app.post('/callbacks/bandwidth', async (req: Request, res: Response) => {
 
         case 'outboundConnectionRequest':
             console.log(`Outbound call request for endpoint ${endpointId} to ${to} (${toType})`);
+            // Ignore outbound requests that arrive right after a hangup (race condition)
+            const cooldownUntil = endpointHangupCooldown.get(endpointId);
+            if (cooldownUntil && Date.now() < cooldownUntil) {
+                console.log(`Ignoring outbound request for ${endpointId} — hangup cooldown active`);
+                return res.sendStatus(200);
+            }
             if (toType === 'PHONE_NUMBER') {
                 if (!to.startsWith('+')) to = `+${to}`;
                 try {
@@ -323,7 +333,7 @@ app.post('/callbacks/bandwidth/status', (req: Request, res: Response) => {
 
     if (event.eventType === 'disconnect') {
         console.log(`Call disconnected: ${event.callId}, cause: ${event.cause}`);
-        handleCallDisconnect(event.callId);
+        handleCallDisconnect(event.callId, event.cause);
     }
 
     res.sendStatus(200);
@@ -332,6 +342,10 @@ app.post('/callbacks/bandwidth/status', (req: Request, res: Response) => {
 // POST /calls/answer - BXML callback when an outbound call is answered
 app.post('/calls/answer', (req: Request, res: Response) => {
     const callId: string = req.body.callId;
+    const endpointId = endpointCallIdMap.get(callId);
+    if (endpointId) {
+        endpointCallStatusMap.set(endpointId, { callId, status: 'answered' });
+    }
     const xmlResponse = processInboundCall(callId);
     console.log(`Call answer callback for callId: ${callId}`);
     res.type('application/xml').send(xmlResponse);
@@ -345,7 +359,7 @@ app.post('/calls/status', async (req: Request, res: Response) => {
     switch (eventType) {
         case 'disconnect':
             console.log(`Call disconnected with ID: ${callId}`);
-            handleCallDisconnect(callId);
+            handleCallDisconnect(callId, req.body.cause);
             res.sendStatus(200);
             break;
         case 'redirect':
@@ -354,6 +368,48 @@ app.post('/calls/status', async (req: Request, res: Response) => {
             const xmlResponse = processInboundCall(callId);
             res.type('application/xml').send(xmlResponse);
             break;
+    }
+});
+
+// GET /api/endpoint/:endpointId/call-status - Get current PSTN call status for an endpoint
+app.get('/api/endpoint/:endpointId/call-status', (req: Request, res: Response) => {
+    const endpointId = req.params.endpointId;
+    const status = endpointCallStatusMap.get(endpointId);
+    if (!status) {
+        return res.json({ status: 'idle' });
+    }
+    res.json(status);
+});
+
+// POST /api/endpoint/:endpointId/hangup - Hang up the PSTN leg for an endpoint
+app.post('/api/endpoint/:endpointId/hangup', async (req: Request, res: Response) => {
+    const endpointId = req.params.endpointId;
+    const callStatus = endpointCallStatusMap.get(endpointId);
+    if (!callStatus) {
+        return res.status(404).json({ error: 'No active call for this endpoint' });
+    }
+
+    try {
+        const configuration = new Configuration({
+            clientId: BW_ID_CLIENT_ID,
+            clientSecret: BW_ID_CLIENT_SECRET,
+        });
+        if (VOICE_URL !== PROD_VOICE_URL) {
+            configuration.basePath = VOICE_URL;
+        }
+
+        const callsApi = new CallsApi(configuration);
+        await callsApi.updateCall(ACCOUNT_ID, callStatus.callId, {
+            state: 'completed',
+        });
+        console.log(`Hung up PSTN leg ${callStatus.callId} for endpoint ${endpointId}`);
+        // Set a 5-second cooldown to ignore stale outboundConnectionRequest callbacks
+        endpointHangupCooldown.set(endpointId, Date.now() + 5000);
+        handleCallDisconnect(callStatus.callId, 'app-hangup');
+        res.sendStatus(200);
+    } catch (error: any) {
+        console.error(`Error hanging up call for endpoint ${endpointId}:`, error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 

@@ -6,6 +6,12 @@
 	<string>This app needs camera access for video calls.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs microphone access for voice calls.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app connects to a local server for call management.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
