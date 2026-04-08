@@ -81,7 +81,7 @@ final class CallViewModel: ObservableObject {
 
     // MARK: - Private
 
-    private let brtc = BandwidthRTCClient(logLevel: .debug)
+    private let brtc = BandwidthRTCClient()
     private let tokenService = TokenService()
     private let callKitManager = CallKitManager()
     private var localStream: RtcStream?
