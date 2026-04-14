@@ -390,10 +390,8 @@ app.post('/api/endpoint/:endpointId/hangup', async (req: Request, res: Response)
     }
 
     try {
-        const configuration = new Configuration({
-            clientId: BW_ID_CLIENT_ID,
-            clientSecret: BW_ID_CLIENT_SECRET,
-        });
+        const token = await getAuthToken();
+        const configuration = new Configuration({ accessToken: token });
         if (VOICE_URL !== PROD_VOICE_URL) {
             configuration.basePath = VOICE_URL;
         }
