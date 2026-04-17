@@ -93,6 +93,7 @@ final class CallViewModel: ObservableObject {
     private var activeCallRecordId: UUID?
     private var endpointId: String?
     private var pendingIncomingStream: RtcStream?
+    private var callStatusPollTimer: Timer?
 
     init() {
         setupCallbacks()
@@ -197,6 +198,7 @@ final class CallViewModel: ObservableObject {
                     // For outbound calls that bypass CallKit, enable it explicitly here.
                     RTCAudioSession.sharedInstance().isAudioEnabled = true
                     statusText = "Ringing..."
+                    startCallStatusPolling()
                     // Timer and waveform start when the remote party answers (onStreamAvailable).
                 } else {
                     statusText = "Call not accepted"
@@ -214,6 +216,7 @@ final class CallViewModel: ObservableObject {
         callDuration = 0
         stopStatsPolling()
         stopAudioLevelMonitoring()
+        stopCallStatusPolling()
         callKitManager.reportCallEnded(reason: .remoteEnded)
 
         Task { @MainActor in
@@ -227,6 +230,17 @@ final class CallViewModel: ObservableObject {
                     print("[CallViewModel] Hangup failed: \(error)")
                 }
             }
+
+            // Notify backend to terminate the PSTN leg
+            if let eid = endpointId {
+                do {
+                    try await tokenService.hangupCall(serverURL: serverURL, endpointId: eid)
+                    print("[CallViewModel] Backend hangup succeeded")
+                } catch {
+                    print("[CallViewModel] Backend hangup failed: \(error)")
+                }
+            }
+
             connectionState = .connected
             statusText = "Connected"
             remoteStream = nil
@@ -293,6 +307,7 @@ final class CallViewModel: ObservableObject {
                 }
 
                 self.remoteStream = stream
+                self.stopCallStatusPolling()
 
                 if self.connectionState == .ringing {
                     self.pendingIncomingStream = stream
@@ -487,6 +502,39 @@ final class CallViewModel: ObservableObject {
         callStats = nil
         previousStatsSnapshot = nil
         showStatsOverlay = false
+    }
+
+    // MARK: - Call Status Polling
+
+    private func startCallStatusPolling() {
+        stopCallStatusPolling()
+        guard let eid = endpointId else { return }
+        print("[CallViewModel] Starting call status polling for endpoint \(eid)")
+
+        callStatusPollTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                do {
+                    let status = try await self.tokenService.getCallStatus(
+                        serverURL: self.serverURL, endpointId: eid
+                    )
+                    print("[CallViewModel] Poll status: \(status.status) (cause: \(status.cause ?? "none"))")
+
+                    if status.status == "disconnected" {
+                        print("[CallViewModel] PSTN call rejected/disconnected — ending call locally")
+                        self.stopCallStatusPolling()
+                        self.hangup()
+                    }
+                } catch {
+                    print("[CallViewModel] Poll error: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    private func stopCallStatusPolling() {
+        callStatusPollTimer?.invalidate()
+        callStatusPollTimer = nil
     }
 
     // MARK: - Audio Level Monitoring

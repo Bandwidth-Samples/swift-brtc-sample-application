@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D0947DEF2F853B5200EDC144 /* BandwidthRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D0947DF02F853B5200EDC144 /* BandwidthRTC */; };
+		D0947DF12F853B5200EDC144 /* BandwidthRTC in Embed Frameworks */ = {isa = PBXBuildFile; productRef = D0947DF02F853B5200EDC144 /* BandwidthRTC */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		AA000001 /* BRTCSampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100001 /* BRTCSampleApp.swift */; };
 		AA000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100002 /* ContentView.swift */; };
 		AA000003 /* CallViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100003 /* CallViewModel.swift */; };
@@ -22,8 +24,6 @@
 		AA000011 /* StatsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* StatsOverlayView.swift */; };
 		AA000012 /* DetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100012 /* DetailsView.swift */; };
 		AA000013 /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* AudioWaveformView.swift */; };
-		D05073BA2F5F0EC6004B3F0C /* BandwidthRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D05073B92F5F0EC6004B3F0C /* BandwidthRTC */; };
-		D054307C2F6209540008C048 /* BandwidthRTC in Embed Frameworks */ = {isa = PBXBuildFile; productRef = D05073B92F5F0EC6004B3F0C /* BandwidthRTC */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,7 +33,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				D054307C2F6209540008C048 /* BandwidthRTC in Embed Frameworks */,
+				D0947DF12F853B5200EDC144 /* BandwidthRTC in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -65,7 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D05073BA2F5F0EC6004B3F0C /* BandwidthRTC in Frameworks */,
+				D0947DEF2F853B5200EDC144 /* BandwidthRTC in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,7 +169,7 @@
 			);
 			name = BRTCSampleApp;
 			packageProductDependencies = (
-				D05073B92F5F0EC6004B3F0C /* BandwidthRTC */,
+				D0947DF02F853B5200EDC144 /* BandwidthRTC */,
 			);
 			productName = BRTCSampleApp;
 			productReference = AA10000B /* BRTCSampleApp.app */;
@@ -200,7 +200,7 @@
 			);
 			mainGroup = AA200001;
 			packageReferences = (
-				D05073B82F5F0EC6004B3F0C /* XCRemoteSwiftPackageReference "swift-brtc-sdk" */,
+				D0947DEE2F853B5200EDC144 /* XCLocalSwiftPackageReference "../../swift-brtc-sdk" */,
 			);
 			productRefGroup = AA200006 /* Products */;
 			projectDirPath = "";
@@ -401,21 +401,16 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		D05073B82F5F0EC6004B3F0C /* XCRemoteSwiftPackageReference "swift-brtc-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Bandwidth/swift-brtc-sdk";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		D0947DEE2F853B5200EDC144 /* XCLocalSwiftPackageReference "../../swift-brtc-sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../swift-brtc-sdk";
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		D05073B92F5F0EC6004B3F0C /* BandwidthRTC */ = {
+		D0947DF02F853B5200EDC144 /* BandwidthRTC */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = D05073B82F5F0EC6004B3F0C /* XCRemoteSwiftPackageReference "swift-brtc-sdk" */;
 			productName = BandwidthRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
