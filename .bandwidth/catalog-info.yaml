@@ -2,10 +2,10 @@ apiVersion: backstage.io/v1alpha1
 kind: Location
 metadata:
   schemaVersion: v1.0.0
-  name: brtc-swift-sample-application-location
-  description: Links to additional entities in the brtc-swift-sample-application repository.
+  name: swift-brtc-sample-application-location
+  description: Links to additional entities in the swift-brtc-sample-application repository.
   annotations:
-    github.com/project-slug: Bandwidth/brtc-swift-sample-application
+    github.com/project-slug: Bandwidth/swift-brtc-sample-application
 spec:
   targets:
     - ./component.yaml

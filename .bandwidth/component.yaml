@@ -2,16 +2,16 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   schemaVersion: v1.0.0
-  name: brtc-swift-sample-application
+  name: swift-brtc-sample-application
   description: Sample application that implements the BRTC Swift SDK
   annotations:
-    github.com/project-slug: Bandwidth/brtc-swift-sample-application
+    github.com/project-slug: Bandwidth/swift-brtc-sample-application
   organization: BW
-  costCenter: 
-  platformType: 
+  costCenter:
+  platformType:
   buildPlatform: GitHub Actions
 spec:
   type: Service
   owner: github/band-programmable-voice
   lifecycle: Prototype
-  
+
