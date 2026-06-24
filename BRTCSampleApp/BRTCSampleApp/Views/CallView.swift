@@ -231,6 +231,11 @@ struct CallView: View {
                 .padding(.bottom, 12)
 
                 if viewModel.showDialpad {
+                    DtmfDurationControl(duration: $viewModel.dtmfDuration)
+                        .padding(.horizontal, 32)
+                        .padding(.bottom, 4)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+
                     DialpadView { tone in
                         viewModel.sendDtmf(tone)
                     }
@@ -393,6 +398,51 @@ struct CallButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
             .animation(.spring(response: 0.15, dampingFraction: 0.8), value: configuration.isPressed)
+    }
+}
+
+// MARK: - DTMF Duration Control
+
+struct DtmfDurationControl: View {
+    @Binding var duration: Int
+
+    private let step = 50
+    private let minDuration = 70
+    private let maxDuration = 6000
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text("Tone")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.6))
+
+            Spacer()
+
+            Button {
+                duration = max(minDuration, duration - step)
+            } label: {
+                Image(systemName: "minus.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .disabled(duration <= minDuration)
+
+            Text("\(duration) ms")
+                .font(.system(size: 14, weight: .medium).monospacedDigit())
+                .foregroundStyle(.white)
+                .frame(minWidth: 60)
+
+            Button {
+                duration = min(maxDuration, duration + step)
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .disabled(duration >= maxDuration)
+        }
     }
 }
 
