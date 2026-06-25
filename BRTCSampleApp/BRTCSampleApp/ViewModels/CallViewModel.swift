@@ -22,6 +22,7 @@ final class CallViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     @Published var showDialpad: Bool = false
+    @Published var dtmfDuration: Int = 100
     @Published var statusText: String = ""
     @Published var callDuration: TimeInterval = 0
     @Published var callStats: CallStatsSnapshot?
@@ -259,7 +260,7 @@ final class CallViewModel: ObservableObject {
     }
 
     func sendDtmf(_ tone: String) {
-        brtc.sendDtmf(tone)
+        brtc.sendDtmf(tone, duration: dtmfDuration)
     }
 
     // MARK: - Simulate Incoming Call
