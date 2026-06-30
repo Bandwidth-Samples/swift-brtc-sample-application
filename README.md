@@ -36,8 +36,8 @@ A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://dev.
 
 ## Prerequisites
 
-- **Xcode 15+** with iOS 17.0 SDK
-- **iPhone** running iOS 17+ (CallKit requires a real device; the simulator uses a fallback UI)
+- **Xcode 15+** with iOS 15.0 SDK or later
+- **iPhone** running iOS 15+ (CallKit requires a real device; the simulator uses a fallback UI)
 - **Node.js 18+**
 - **ngrok** (or similar tunneling tool) for exposing the local server to Bandwidth's webhooks
 - **Bandwidth account** with:

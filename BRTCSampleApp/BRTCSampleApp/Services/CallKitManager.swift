@@ -30,19 +30,20 @@ final class CallKitManager: NSObject, CXProviderDelegate {
 
     // MARK: - CallKit
 
-    private let provider: CXProvider
-    private let callController = CXCallController()
-
-    override init() {
+    // Created lazily so constructing `CallKitManager` doesn't pay CXProvider's
+    // first-time XPC registration cost (often several seconds on a fresh install)
+    // on the main thread during CallViewModel's synchronous init.
+    private lazy var provider: CXProvider = {
         let config = CXProviderConfiguration()
         config.supportsVideo = false
         config.maximumCallsPerCallGroup = 1
         config.supportedHandleTypes = [.generic]
 
-        provider = CXProvider(configuration: config)
-        super.init()
+        let provider = CXProvider(configuration: config)
         provider.setDelegate(self, queue: nil)
-    }
+        return provider
+    }()
+    private let callController = CXCallController()
 
     /// Call this once before the first BRTC connection is established.
     func prepareAudioSession() {

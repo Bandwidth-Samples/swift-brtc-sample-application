@@ -133,7 +133,7 @@ struct ConnectView: View {
                 Spacer().frame(height: 48)
             }
         }
-        .scrollDismissesKeyboard(.interactively)
+        .interactiveKeyboardDismissCompat()
         .animation(.easeInOut(duration: 0.25), value: urlFieldFocused)
         .background(
             LinearGradient(
@@ -185,6 +185,18 @@ private struct FeatureRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+private extension View {
+    /// `.scrollDismissesKeyboard(.interactively)` requires iOS 16 — no-op below that.
+    @ViewBuilder
+    func interactiveKeyboardDismissCompat() -> some View {
+        if #available(iOS 16, *) {
+            self.scrollDismissesKeyboard(.interactively)
+        } else {
+            self
         }
     }
 }
