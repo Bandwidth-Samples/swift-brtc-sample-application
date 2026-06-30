@@ -308,7 +308,6 @@ final class CallViewModel: ObservableObject {
                 }
 
                 self.remoteStream = stream
-                self.stopCallStatusPolling()
 
                 if self.connectionState == .ringing {
                     self.pendingIncomingStream = stream
@@ -445,6 +444,8 @@ final class CallViewModel: ObservableObject {
                     showErrorMessage("Server returned \(statusCode): \(body)")
                     return
                 }
+
+                startCallStatusPolling()
             } catch {
                 showErrorMessage(error.localizedDescription)
             }

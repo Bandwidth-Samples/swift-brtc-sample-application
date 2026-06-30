@@ -34,8 +34,8 @@ struct RecentsView: View {
             }
             .navigationTitle("Recents")
             .toolbar {
-                if !callHistory.records.isEmpty {
-                    ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarLeading) {
+                    if !callHistory.records.isEmpty {
                         Button("Clear") {
                             withAnimation {
                                 callHistory.clearAll()
