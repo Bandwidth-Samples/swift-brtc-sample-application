@@ -407,7 +407,7 @@
 			repositoryURL = "https://github.com/Bandwidth/swift-brtc-sdk.git";
 			requirement = {
 				kind = exactVersion;
-				version = "1.0.3";
+				version = "1.0.5";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
