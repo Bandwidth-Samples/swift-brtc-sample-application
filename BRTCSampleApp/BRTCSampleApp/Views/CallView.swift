@@ -61,10 +61,22 @@ struct CallView: View {
                     .font(.system(size: 30, weight: .light))
                     .foregroundStyle(.white)
 
-                Text("Incoming Call...")
-                    .font(.title3)
-                    .foregroundStyle(.white.opacity(0.7))
-                    .padding(.top, 4)
+                if let from = viewModel.pendingIncomingStream?.from {
+                    let displayText = if let fromType = viewModel.pendingIncomingStream?.fromType {
+                        "From: \(from) (\(fromType))"
+                    } else {
+                        "From: \(from)"
+                    }
+                    Text(displayText)
+                        .font(.title3)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .padding(.top, 4)
+                } else {
+                    Text("Incoming Call...")
+                        .font(.title3)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .padding(.top, 4)
+                }
 
                 Spacer()
 

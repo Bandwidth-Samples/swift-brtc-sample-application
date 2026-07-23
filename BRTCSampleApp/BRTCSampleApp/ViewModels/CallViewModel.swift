@@ -93,7 +93,7 @@ final class CallViewModel: ObservableObject {
     private let waveformCapacity = 50
     private var activeCallRecordId: UUID?
     private var endpointId: String?
-    private var pendingIncomingStream: RtcStream?
+    @Published private(set) var pendingIncomingStream: RtcStream?
     private var callStatusPollTimer: Timer?
 
     init() {
@@ -132,7 +132,9 @@ final class CallViewModel: ObservableObject {
 
                 callKitManager.prepareAudioSession()
 
-                try await brtc.connect(authParams: RtcAuthParams(endpointToken: token))
+                // Connect with autoAccept: false to allow manual accept/decline of inbound calls
+                let options = RtcOptions(autoAccept: false)
+                try await brtc.connect(authParams: RtcAuthParams(endpointToken: token), options: options)
 
                 statusText = "Publishing media..."
                 let stream = try await brtc.publish(audio: true)
@@ -309,14 +311,40 @@ final class CallViewModel: ObservableObject {
 
                 self.remoteStream = stream
 
+                // Check if this inbound call was auto-accepted by the gateway
+                let isAutoAccepted = stream.autoAccepted ?? true
+
                 if self.connectionState == .ringing {
+                    // User already initiated a manual accept/decline flow
                     self.pendingIncomingStream = stream
-                    stream.mediaStream.audioTracks.forEach { $0.isEnabled = false }
+                    if !isAutoAccepted {
+                        // Audio gate is closed — keep audio tracks disabled
+                        stream.mediaStream.audioTracks.forEach { $0.isEnabled = false }
+                    }
                 } else if self.connectionState == .connected {
-                    self.connectionState = .inCall
-                    self.statusText = "Incoming call"
-                    self.recordIncomingCall(phoneNumber: "Incoming Call")
-                    self.startCallTimer()
+                    if !isAutoAccepted {
+                        // This is a parked inbound call — transition to ringing and wait for user action
+                        self.pendingIncomingStream = stream
+                        stream.mediaStream.audioTracks.forEach { $0.isEnabled = false }
+                        self.connectionState = .ringing
+                        self.statusText = "Incoming call"
+                        #if !targetEnvironment(simulator)
+                        self.callKitManager.reportIncomingCall(callerName: "Incoming Call") { error in
+                            if let error {
+                                Task { @MainActor in
+                                    self.connectionState = .connected
+                                    self.statusText = "CallKit error: \(error.localizedDescription)"
+                                }
+                            }
+                        }
+                        #endif
+                    } else {
+                        // Auto-accepted inbound call — proceed to in-call state
+                        self.connectionState = .inCall
+                        self.statusText = "Incoming call"
+                        self.recordIncomingCall(phoneNumber: "Incoming Call")
+                        self.startCallTimer()
+                    }
                 } else if self.connectionState == .inCall {
                     if self.statusText == "Connecting..." {
                         self.statusText = "Incoming call"
@@ -413,41 +441,21 @@ final class CallViewModel: ObservableObject {
 
         recordIncomingCall(phoneNumber: "Incoming Call")
 
-        // Now create the Voice API call — TTS starts fresh from the beginning.
-        // The server creates a call from BW_FROM_NUMBER to BW_FROM_NUMBER.
-        // B-leg answers with TTS before bridging.
-        // A-leg bridges to the WebRTC endpoint via <Connect><Endpoint>.
-        // When the bridge is established, onStreamAvailable fires and audio flows.
-        guard let endpointId else {
-            statusText = "Error: no endpoint"
-            return
-        }
-
         Task { @MainActor in
             do {
-                guard let url = URL(string: "\(serverURL)/simulate-incoming-call") else {
-                    showErrorMessage("Invalid server URL")
-                    return
+                // Call the SDK to open the audio gate on the parked inbound call
+                try await brtc.acceptStream()
+
+                // Enable audio playback for the pending stream
+                if let stream = pendingIncomingStream {
+                    stream.mediaStream.audioTracks.forEach { $0.isEnabled = true }
                 }
 
-                var request = URLRequest(url: url)
-                request.httpMethod = "POST"
-                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                let body: [String: Any] = ["endpointId": endpointId, "delaySeconds": 0]
-                request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-                let (data, response) = try await URLSession.shared.data(for: request)
-                guard let httpResponse = response as? HTTPURLResponse,
-                      (200...299).contains(httpResponse.statusCode) else {
-                    let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-                    let body = String(data: data, encoding: .utf8) ?? ""
-                    showErrorMessage("Server returned \(statusCode): \(body)")
-                    return
-                }
-
-                startCallStatusPolling()
+                startCallTimer()
             } catch {
                 showErrorMessage(error.localizedDescription)
+                connectionState = .ringing
+                statusText = "Accept failed"
             }
         }
     }
@@ -455,21 +463,30 @@ final class CallViewModel: ObservableObject {
     /// Called when user taps Decline on the incoming call UI (our custom UI or CallKit).
     func declineIncomingCall() {
         if connectionState == .ringing {
-            // User declined before answering — record as missed call
-            callKitManager.reportCallEnded(reason: .declinedElsewhere)
-            pendingIncomingStream = nil
-            remoteStream = nil
-            connectionState = .connected
-            statusText = "Connected"
+            // User declined before answering — tell the SDK to reject the call
+            Task { @MainActor in
+                do {
+                    try await brtc.declineStream()
+                } catch {
+                    print("[CallViewModel] declineStream failed: \(error)")
+                }
 
-            let record = CallDetailRecord(
-                id: UUID(),
-                phoneNumber: "Incoming Call",
-                direction: .inbound,
-                timestamp: Date(),
-                duration: 0
-            )
-            callHistory.addRecord(record)
+                // Clean up local state and record as missed call
+                self.callKitManager.reportCallEnded(reason: .declinedElsewhere)
+                self.pendingIncomingStream = nil
+                self.remoteStream = nil
+                self.connectionState = .connected
+                self.statusText = "Connected"
+
+                let record = CallDetailRecord(
+                    id: UUID(),
+                    phoneNumber: "Incoming Call",
+                    direction: .inbound,
+                    timestamp: Date(),
+                    duration: 0
+                )
+                self.callHistory.addRecord(record)
+            }
         } else if connectionState == .inCall {
             // User ended an active call via CallKit (e.g. lock screen End button)
             hangup()
