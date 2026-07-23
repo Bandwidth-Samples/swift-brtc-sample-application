@@ -93,7 +93,7 @@ final class CallViewModel: ObservableObject {
     private let waveformCapacity = 50
     private var activeCallRecordId: UUID?
     private var endpointId: String?
-    private var pendingIncomingStream: RtcStream?
+    @Published private(set) var pendingIncomingStream: RtcStream?
     private var callStatusPollTimer: Timer?
 
     init() {

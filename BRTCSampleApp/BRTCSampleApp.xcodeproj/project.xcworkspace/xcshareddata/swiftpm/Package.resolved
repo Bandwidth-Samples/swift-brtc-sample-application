@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Bandwidth/swift-brtc-sdk.git",
       "state" : {
-        "revision" : "a3d1386adf7812f4c3c75dd1174f121ca34bf872",
-        "version" : "1.0.5"
+        "revision" : "e0a67d6cbb163e53f68f385d37cdbc4fa215cd0f",
+        "version" : "1.0.6"
       }
     },
     {
