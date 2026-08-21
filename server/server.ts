@@ -28,6 +28,13 @@ app.use((req, res, next) => {
 
 const PROD_VOICE_URL = 'https://voice.bandwidth.com/api/v2';
 
+// Sentinel "to" value that signals a PlayAudio request rather than a real
+// endpoint-to-endpoint bridge. The app sends this as a dummy ENDPOINT target
+// since PlayAudio has no bridge peer (see the JS sample app's server/index.ts
+// for the same convention).
+const PLAY_AUDIO_TARGET = 'playAudio';
+const DEFAULT_PLAY_AUDIO_URL = 'https://download.samplelib.com/mp3/sample-30s.mp3';
+
 function getEnvVars() {
     const env = process.env;
     const hasClientCreds = !!env.BW_ID_CLIENT_ID && !!env.BW_ID_CLIENT_SECRET;
@@ -306,6 +313,14 @@ app.post('/callbacks/bandwidth', async (req: Request, res: Response) => {
                 } catch (error: any) {
                     console.error('Error placing outbound call:', error.message);
                 }
+                return res.sendStatus(200);
+            }
+            if (toType === 'ENDPOINT' && to === PLAY_AUDIO_TARGET) {
+                console.log(`Playing demo audio for endpoint ${endpointId}`);
+                return res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <PlayAudio>${DEFAULT_PLAY_AUDIO_URL}</PlayAudio>
+</Response>`);
             }
             return res.sendStatus(200);
     }
