@@ -178,6 +178,19 @@ struct CallView: View {
             }
             .padding(.horizontal, 24)
 
+            Spacer().frame(height: 12)
+
+            Button {
+                viewModel.playAudio()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "play.circle.fill")
+                    Text("Play Audio Demo")
+                }
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.blue)
+            }
+
             Spacer()
 
             dialingBottomControls
@@ -215,7 +228,7 @@ struct CallView: View {
                 Spacer()
 
                 VStack(spacing: 4) {
-                    Text(viewModel.formattedPhoneNumber)
+                    Text(viewModel.isPlayAudioCall ? "Play Audio" : viewModel.formattedPhoneNumber)
                         .font(.system(size: 28, weight: .regular))
                         .foregroundStyle(.white)
 

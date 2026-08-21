@@ -3,6 +3,11 @@ import SwiftUI
 import UIKit
 import BandwidthRTC
 
+/// Sentinel "to" value that signals a PlayAudio request rather than a real
+/// endpoint-to-endpoint bridge. The gateway responds with a <PlayAudio> BXML
+/// verb when it sees this dummy ENDPOINT target.
+private let playAudioTarget = "playAudio"
+
 enum ConnectionState: Equatable {
     case disconnected
     case connecting
@@ -27,6 +32,7 @@ final class CallViewModel: ObservableObject {
     @Published var callDuration: TimeInterval = 0
     @Published var callStats: CallStatsSnapshot?
     @Published var showStatsOverlay: Bool = false
+    @Published var isPlayAudioCall: Bool = false
 
     // MARK: - Audio Waveform
 
@@ -212,7 +218,46 @@ final class CallViewModel: ObservableObject {
         }
     }
 
+    /// Dials the demo "Play Audio" destination — a dummy ENDPOINT target with
+    /// no bridge peer that the gateway answers with a <PlayAudio> BXML verb.
+    func playAudio() {
+        isPlayAudioCall = true
+        connectionState = .inCall
+        statusText = "Calling Play Audio..."
+
+        let record = CallDetailRecord(
+            id: UUID(),
+            phoneNumber: "Play Audio",
+            direction: .outbound,
+            timestamp: Date(),
+            duration: 0
+        )
+        callHistory.addRecord(record)
+        activeCallRecordId = record.id
+
+        Task { @MainActor in
+            do {
+                let result = try await brtc.requestOutboundConnection(
+                    id: playAudioTarget,
+                    type: .endpoint
+                )
+                if result.accepted {
+                    RTCAudioSession.sharedInstance().isAudioEnabled = true
+                    statusText = "Ringing..."
+                } else {
+                    isPlayAudioCall = false
+                    statusText = "Call not accepted"
+                }
+            } catch {
+                isPlayAudioCall = false
+                showErrorMessage(error.localizedDescription)
+            }
+        }
+    }
+
     func hangup() {
+        let wasPlayAudioCall = isPlayAudioCall
+        isPlayAudioCall = false
         finalizeCallRecord()
         callTimer?.invalidate()
         callTimer = nil
@@ -223,7 +268,13 @@ final class CallViewModel: ObservableObject {
         callKitManager.reportCallEnded(reason: .remoteEnded)
 
         Task { @MainActor in
-            if !phoneNumber.isEmpty {
+            if wasPlayAudioCall {
+                do {
+                    _ = try await brtc.hangupConnection(endpoint: playAudioTarget, type: .endpoint)
+                } catch {
+                    print("[CallViewModel] Hangup failed: \(error)")
+                }
+            } else if !phoneNumber.isEmpty {
                 do {
                     _ = try await brtc.hangupConnection(
                         endpoint: e164PhoneNumber,
@@ -234,8 +285,8 @@ final class CallViewModel: ObservableObject {
                 }
             }
 
-            // Notify backend to terminate the PSTN leg
-            if let eid = endpointId {
+            // Notify backend to terminate the PSTN leg (Play Audio has no PSTN leg)
+            if !wasPlayAudioCall, let eid = endpointId {
                 do {
                     try await tokenService.hangupCall(serverURL: serverURL, endpointId: eid)
                     print("[CallViewModel] Backend hangup succeeded")
