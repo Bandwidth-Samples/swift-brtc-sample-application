@@ -186,6 +186,7 @@ final class CallViewModel: ObservableObject {
 
     func call() {
         guard isPhoneNumberValid else { return }
+        isPlayAudioCall = false
 
         connectionState = .inCall
         statusText = "Calling \(formattedPhoneNumber)..."
@@ -222,10 +223,14 @@ final class CallViewModel: ObservableObject {
                     // Timer and waveform start when the remote party answers (onStreamAvailable).
                 } else {
                     isPlayAudioCall = false
+                    callKitManager.reportCallEnded(reason: .failed)
+                    stopCallStatusPolling()
                     statusText = "Call not accepted"
                 }
             } catch {
                 isPlayAudioCall = false
+                callKitManager.reportCallEnded(reason: .failed)
+                stopCallStatusPolling()
                 showErrorMessage(error.localizedDescription)
             }
         }
@@ -415,6 +420,7 @@ final class CallViewModel: ObservableObject {
                     // truly failed, onRemoteDisconnected will fire and handle it.
                 } else if self.connectionState == .inCall {
                     // Remote side hung up during active call
+                    self.isPlayAudioCall = false
                     self.finalizeCallRecord()
                     self.callKitManager.reportCallEnded(reason: .remoteEnded)
                     self.callTimer?.invalidate()
@@ -439,6 +445,7 @@ final class CallViewModel: ObservableObject {
                     self.connectionState = .connected
                     self.statusText = "Missed call"
                 } else if self.connectionState == .inCall {
+                    self.isPlayAudioCall = false
                     self.finalizeCallRecord()
                     self.callKitManager.reportCallEnded(reason: .remoteEnded)
                     self.callTimer?.invalidate()
@@ -480,6 +487,15 @@ final class CallViewModel: ObservableObject {
 
         callKitManager.onOutboundCallStarted = { [weak self] _ in
             self?.performOutboundCall()
+        }
+
+        callKitManager.onOutboundCallFailed = { [weak self] error in
+            Task { @MainActor in
+                guard let self else { return }
+                self.isPlayAudioCall = false
+                self.statusText = "Call failed"
+                self.showErrorMessage(error.localizedDescription)
+            }
         }
     }
 

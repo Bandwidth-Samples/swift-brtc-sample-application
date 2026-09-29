@@ -27,6 +27,9 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     /// Called when CallKit accepts the outbound CXStartCallAction.
     var onOutboundCallStarted: ((UUID) -> Void)?
 
+    /// Called when CallKit rejects the outbound start request.
+    var onOutboundCallFailed: ((Error) -> Void)?
+
     // MARK: - State
 
     private(set) var activeCallUUID: UUID?
@@ -83,6 +86,9 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         let uuid = UUID()
         activeCallUUID = uuid
 
+        // Force the lazy provider (and its delegate) to exist, or CallKit never performs the action.
+        _ = provider
+
         let cxHandle = CXHandle(type: .generic, value: handle)
         let action = CXStartCallAction(call: uuid, handle: cxHandle)
         action.isVideo = false
@@ -92,6 +98,10 @@ final class CallKitManager: NSObject, CXProviderDelegate {
             if let error {
                 Self.logger.error("CXStartCallAction failed: \(error)")
                 self.activeCallUUID = nil
+                // The request completion can run on any queue.
+                DispatchQueue.main.async {
+                    self.onOutboundCallFailed?(error)
+                }
             }
         }
     }
