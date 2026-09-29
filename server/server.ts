@@ -416,8 +416,11 @@ app.post('/api/endpoint/:endpointId/hangup', async (req: Request, res: Response)
             state: 'completed',
         });
         console.log(`Hung up PSTN leg ${callStatus.callId} for endpoint ${endpointId}`);
-        // Set a 5-second cooldown to ignore stale outboundConnectionRequest callbacks
-        endpointHangupCooldown.set(endpointId, Date.now() + 5000);
+        // Only a hangup while still ringing can leave a stale outboundConnectionRequest in flight;
+        // arming it after an answered/ended call would drop the user's next redial.
+        if (callStatus.status === 'ringing') {
+            endpointHangupCooldown.set(endpointId, Date.now() + 5000);
+        }
         handleCallDisconnect(callStatus.callId, 'app-hangup');
         res.sendStatus(200);
     } catch (error: any) {

@@ -103,6 +103,7 @@ final class CallViewModel: ObservableObject {
     private var callStatusPollTimer: Timer?
 
     init() {
+        callKitManager.brtc = brtc
         setupCallbacks()
         setupCallKitCallbacks()
     }
@@ -136,10 +137,14 @@ final class CallViewModel: ObservableObject {
                 self.endpointId = serverEndpointId
                 statusText = "Connecting to BRTC..."
 
-                callKitManager.prepareAudioSession()
-
-                // Connect with autoAccept: false to allow manual accept/decline of inbound calls
-                let options = RtcOptions(autoAccept: false)
+                // Connect with autoAccept: false to allow manual accept/decline of inbound calls.
+                // manualAudioSessionActivation defers AVAudioSession activation to CallKit's
+                // didActivate/didDeactivate (forwarded by CallKitManager) instead of the SDK
+                // activating it itself.
+                let options = RtcOptions(
+                    audioProcessing: AudioProcessingOptions(manualAudioSessionActivation: true),
+                    autoAccept: false
+                )
                 try await brtc.connect(authParams: RtcAuthParams(endpointToken: token), options: options)
 
                 statusText = "Publishing media..."
@@ -181,6 +186,7 @@ final class CallViewModel: ObservableObject {
 
     func call() {
         guard isPhoneNumberValid else { return }
+        isPlayAudioCall = false
 
         connectionState = .inCall
         statusText = "Calling \(formattedPhoneNumber)..."
@@ -196,23 +202,35 @@ final class CallViewModel: ObservableObject {
         callHistory.addRecord(record)
         activeCallRecordId = record.id
 
+        // Registers with CallKit so its didActivate/didDeactivate hooks fire for this call
+        // too — performOutboundCall() runs once CallKit confirms the outgoing call.
+        callKitManager.startOutboundCall(handle: e164PhoneNumber)
+    }
+
+    /// Places the actual BRTC outbound connection once CallKit has registered the call
+    /// (see `call()` / `playAudio()`).
+    private func performOutboundCall() {
         Task { @MainActor in
             do {
-                let result = try await brtc.requestOutboundConnection(
-                    id: e164PhoneNumber,
-                    type: .phoneNumber
-                )
+                let target = isPlayAudioCall ? playAudioTarget : e164PhoneNumber
+                let type: EndpointType = isPlayAudioCall ? .endpoint : .phoneNumber
+                let result = try await brtc.requestOutboundConnection(id: target, type: type)
                 if result.accepted {
-                    // useManualAudio=true means WebRTC won't start audio on its own.
-                    // For outbound calls that bypass CallKit, enable it explicitly here.
-                    RTCAudioSession.sharedInstance().isAudioEnabled = true
                     statusText = "Ringing..."
-                    startCallStatusPolling()
+                    if !isPlayAudioCall {
+                        startCallStatusPolling()
+                    }
                     // Timer and waveform start when the remote party answers (onStreamAvailable).
                 } else {
+                    isPlayAudioCall = false
+                    callKitManager.reportCallEnded(reason: .failed)
+                    stopCallStatusPolling()
                     statusText = "Call not accepted"
                 }
             } catch {
+                isPlayAudioCall = false
+                callKitManager.reportCallEnded(reason: .failed)
+                stopCallStatusPolling()
                 showErrorMessage(error.localizedDescription)
             }
         }
@@ -235,24 +253,7 @@ final class CallViewModel: ObservableObject {
         callHistory.addRecord(record)
         activeCallRecordId = record.id
 
-        Task { @MainActor in
-            do {
-                let result = try await brtc.requestOutboundConnection(
-                    id: playAudioTarget,
-                    type: .endpoint
-                )
-                if result.accepted {
-                    RTCAudioSession.sharedInstance().isAudioEnabled = true
-                    statusText = "Ringing..."
-                } else {
-                    isPlayAudioCall = false
-                    statusText = "Call not accepted"
-                }
-            } catch {
-                isPlayAudioCall = false
-                showErrorMessage(error.localizedDescription)
-            }
-        }
+        callKitManager.startOutboundCall(handle: "Play Audio")
     }
 
     func hangup() {
@@ -419,6 +420,7 @@ final class CallViewModel: ObservableObject {
                     // truly failed, onRemoteDisconnected will fire and handle it.
                 } else if self.connectionState == .inCall {
                     // Remote side hung up during active call
+                    self.isPlayAudioCall = false
                     self.finalizeCallRecord()
                     self.callKitManager.reportCallEnded(reason: .remoteEnded)
                     self.callTimer?.invalidate()
@@ -443,6 +445,7 @@ final class CallViewModel: ObservableObject {
                     self.connectionState = .connected
                     self.statusText = "Missed call"
                 } else if self.connectionState == .inCall {
+                    self.isPlayAudioCall = false
                     self.finalizeCallRecord()
                     self.callKitManager.reportCallEnded(reason: .remoteEnded)
                     self.callTimer?.invalidate()
@@ -479,6 +482,19 @@ final class CallViewModel: ObservableObject {
         callKitManager.onCallEnded = { [weak self] uuid in
             Task { @MainActor in
                 self?.declineIncomingCall()
+            }
+        }
+
+        callKitManager.onOutboundCallStarted = { [weak self] _ in
+            self?.performOutboundCall()
+        }
+
+        callKitManager.onOutboundCallFailed = { [weak self] error in
+            Task { @MainActor in
+                guard let self else { return }
+                self.isPlayAudioCall = false
+                self.statusText = "Call failed"
+                self.showErrorMessage(error.localizedDescription)
             }
         }
     }
