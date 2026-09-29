@@ -6,16 +6,6 @@ A native iOS calling app powered by [Bandwidth's WebRTC (BRTC) SDK](https://dev.
 
 > **Note:** This project uses the Bandwidth BRTC SDK, which is currently in beta.
 
-> # ⚠️ TODO — DO NOT MERGE UNTIL DONE: SWITCH TO THE PUBLISHED SDK ⚠️
->
-> This project currently builds against a **local checkout** of `swift-brtc-sdk` (`../../swift-brtc-sdk`, an `XCLocalSwiftPackageReference` in `project.pbxproj`) because the CallKit manual audio activation APIs (`manualAudioSessionActivation`, `audioSessionDidActivate`/`audioSessionDidDeactivate`) are not in a published release yet.
->
-> Once the SDK release that contains [swift-brtc-sdk#24](https://github.com/Bandwidth/swift-brtc-sdk/pull/24) is published (1.3.0 or later):
-> 1. Replace the local package reference with `XCRemoteSwiftPackageReference` for `https://github.com/Bandwidth/swift-brtc-sdk.git`, pinned to that exact version.
-> 2. Restore the `swift-brtc-sdk` pin in `BRTCSampleApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
-> 3. Confirm a clean checkout builds without a sibling `swift-brtc-sdk` folder.
-> 4. Delete this block.
-
 ## Features
 
 - **Outbound PSTN Calling** — Dial any phone number from the app. Audio flows over WebRTC and bridges to the PSTN via Bandwidth's Voice API.
