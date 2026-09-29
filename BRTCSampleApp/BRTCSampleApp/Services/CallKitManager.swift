@@ -1,7 +1,7 @@
 import AVFoundation
+import BandwidthRTC
 import CallKit
 import os
-import WebRTC
 
 /// Manages CallKit integration for native iOS incoming call UI.
 ///
@@ -11,6 +11,10 @@ import WebRTC
 final class CallKitManager: NSObject, CXProviderDelegate {
 
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "BRTCSampleApp", category: "CallKit")
+
+    /// The BRTC client to forward `AVAudioSession` activation state to. Set once, before
+    /// `connect()` is called with `AudioProcessingOptions.manualAudioSessionActivation = true`.
+    weak var brtc: BandwidthRTCClient?
 
     // MARK: - Callbacks (to CallViewModel)
 
@@ -26,7 +30,6 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     // MARK: - State
 
     private(set) var activeCallUUID: UUID?
-    private var isOutboundCall: Bool = false
 
     // MARK: - CallKit
 
@@ -44,20 +47,6 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         return provider
     }()
     private let callController = CXCallController()
-
-    /// Call this once before the first BRTC connection is established.
-    func prepareAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .allowBluetoothA2DP])
-            try session.setPreferredSampleRate(48000)
-            try session.setPreferredIOBufferDuration(0.005)
-        } catch {
-            Self.logger.error("AVAudioSession config failed: \(error)")
-        }
-
-        RTCAudioSession.sharedInstance().useManualAudio = true
-    }
 
     // MARK: - Report Incoming Call
 
@@ -93,7 +82,6 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     func startOutboundCall(handle: String) {
         let uuid = UUID()
         activeCallUUID = uuid
-        isOutboundCall = true
 
         let cxHandle = CXHandle(type: .generic, value: handle)
         let action = CXStartCallAction(call: uuid, handle: cxHandle)
@@ -104,7 +92,6 @@ final class CallKitManager: NSObject, CXProviderDelegate {
             if let error {
                 Self.logger.error("CXStartCallAction failed: \(error)")
                 self.activeCallUUID = nil
-                self.isOutboundCall = false
             }
         }
     }
@@ -116,14 +103,12 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         guard let uuid = activeCallUUID else { return }
         provider.reportCall(with: uuid, endedAt: Date(), reason: reason)
         activeCallUUID = nil
-        isOutboundCall = false
     }
 
     // MARK: - CXProviderDelegate
 
     func providerDidReset(_ provider: CXProvider) {
         activeCallUUID = nil
-        isOutboundCall = false
     }
 
     func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
@@ -143,7 +128,6 @@ final class CallKitManager: NSObject, CXProviderDelegate {
         if uuid == activeCallUUID {
             onCallEnded?(uuid)
             activeCallUUID = nil
-            isOutboundCall = false
         }
         action.fulfill()
     }
@@ -152,17 +136,7 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     var speakerEnabled: Bool = false
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
-        let rtcSession = RTCAudioSession.sharedInstance()
-
-        if isOutboundCall {
-            // For outbound calls, skip audioSessionDidActivate to avoid resetting the already-initialized engine
-            rtcSession.isAudioEnabled = true
-        } else {
-            // For incoming calls, the engine needs full activation
-            rtcSession.audioSessionDidActivate(audioSession)
-            rtcSession.isAudioEnabled = true
-        }
-
+        brtc?.audioSessionDidActivate(audioSession)
         applyOutputRoute()
     }
 
@@ -180,7 +154,6 @@ final class CallKitManager: NSObject, CXProviderDelegate {
     }
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
-        RTCAudioSession.sharedInstance().isAudioEnabled = false
-        RTCAudioSession.sharedInstance().audioSessionDidDeactivate(audioSession)
+        brtc?.audioSessionDidDeactivate(audioSession)
     }
 }

@@ -1,15 +1,6 @@
 {
-  "originHash" : "89938beea78fe4beb886af6d605aa82fb04c906a805a356668388c8c5182f786",
+  "originHash" : "cee0fb66c52111df202a11def79b7f40850962a1dbe65386d4b00f7e8e267994",
   "pins" : [
-    {
-      "identity" : "swift-brtc-sdk",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Bandwidth/swift-brtc-sdk.git",
-      "state" : {
-        "revision" : "e0a67d6cbb163e53f68f385d37cdbc4fa215cd0f",
-        "version" : "1.0.6"
-      }
-    },
     {
       "identity" : "webrtc",
       "kind" : "remoteSourceControl",
